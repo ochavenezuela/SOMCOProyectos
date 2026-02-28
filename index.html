@@ -392,6 +392,36 @@
             accent-color: var(--ocha-dark-blue);
         }
 
+        /* Parish filter panel - shown only when 1 municipality is selected */
+        #parroquiaFilterSection {
+            display: none;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(0, 125, 188, 0.2);
+        }
+        #parroquiaFilterSection.visible { display: block; }
+        .parroquia-filter-label {
+            display: block; font-weight: 600; color: #5a5a5a;
+            margin-bottom: 0.5rem; font-size: 0.9rem;
+        }
+        #parroquiaDropdown { max-height: 200px; overflow-y: auto; }
+
+        /* Form parish multi-select */
+        .form-parroquia-multi {
+            width: 100%; border: 1px solid #ddd; border-radius: 6px;
+            max-height: 160px; overflow-y: auto; padding: 0.4rem; background: white;
+            box-sizing: border-box;
+        }
+        .form-parroquia-multi .parroquia-option {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.35rem 0.4rem; cursor: pointer; border-radius: 4px; font-size: 0.88rem;
+        }
+        .form-parroquia-multi .parroquia-option:hover { background: var(--ocha-light-blue); }
+        .form-parroquia-fallback {
+            width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px;
+            box-sizing: border-box; font-size: 0.95rem;
+        }
+
         .multi-select-option:first-child {
             border-bottom: 2px solid var(--ocha-light-blue);
             background-color: rgba(0, 125, 188, 0.03);
@@ -1255,6 +1285,9 @@
                 <button id="importExcelBtn" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
                     <i class="fas fa-file-upload"></i> Excel
                 </button>
+                <button id="exportTemplateBtn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                    <i class="fas fa-file-excel"></i> Plantilla
+                </button>
             </div>
         </div>
     </header>
@@ -1307,6 +1340,26 @@
                         </div>
                     </div>
                 </div>
+                <!-- Filtro de Parroquias: visible solo cuando hay 1 municipio seleccionado -->
+                <div id="parroquiaFilterSection">
+                    <label class="parroquia-filter-label">
+                        <i class="fas fa-map-marker-alt" style="color: var(--ocha-blue); margin-right: 0.3rem;"></i>
+                        Parroquias
+                    </label>
+                    <div class="multi-select-container">
+                        <div class="multi-select-display" id="parroquiaDisplay">
+                            <span>Todas las Parroquias</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="multi-select-dropdown" id="parroquiaDropdown">
+                            <div class="multi-select-option">
+                                <input type="checkbox" id="all-parroquias" checked>
+                                <label for="all-parroquias">Todas las Parroquias</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <select id="estatusFilter" class="filter-select">
                     <option value="">Todos los Estatus</option>
                 </select>
@@ -1406,9 +1459,22 @@
                         <button id="exportFilteredExcel" class="btn btn-success">
                             <i class="fas fa-file-excel"></i> Exportar Filtrados
                         </button>
-                        <button id="exportFilteredPdf" class="btn btn-primary">
-                            <i class="fas fa-file-pdf"></i> PDF Filtrados
-                        </button>
+                        <div class="pdf-dropdown-wrap" style="position:relative; display:inline-block;">
+                            <button id="exportPdfToggle" class="btn btn-primary" style="padding-right:10px;">
+                                <i class="fas fa-file-pdf"></i> PDF <i class="fas fa-caret-down" style="margin-left:5px; font-size:0.8em;"></i>
+                            </button>
+                            <div id="pdfDropdownMenu" style="display:none; position:absolute; top:calc(100% + 4px); right:0; background:#fff; border:1px solid #d0d7de; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:1100; min-width:190px; overflow:hidden;">
+                                <button id="exportPdfShort" style="display:flex; align-items:center; gap:9px; width:100%; padding:9px 14px; border:none; background:none; cursor:pointer; font-size:0.88rem; color:#24292f; white-space:nowrap;" onmouseover="this.style.background='#f6f8fa'" onmouseout="this.style.background='none'">
+                                    <i class="fas fa-building" style="color:#005D92; width:14px;"></i>
+                                    <span><strong>Por Municipio</strong><br><small style="color:#888; font-size:0.78rem;">Parroquias agrupadas</small></span>
+                                </button>
+                                <div style="height:1px; background:#eaecef; margin:0 10px;"></div>
+                                <button id="exportPdfFull" style="display:flex; align-items:center; gap:9px; width:100%; padding:9px 14px; border:none; background:none; cursor:pointer; font-size:0.88rem; color:#24292f; white-space:nowrap;" onmouseover="this.style.background='#f6f8fa'" onmouseout="this.style.background='none'">
+                                    <i class="fas fa-map-marker-alt" style="color:#005D92; width:14px;"></i>
+                                    <span><strong>Por Parroquia</strong><br><small style="color:#888; font-size:0.78rem;">Un registro por parroquia</small></span>
+                                </button>
+                            </div>
+                        </div>
                         <button id="deleteSelectedBtn" class="btn btn-danger" style="display: none; background: #dc3545; border-color: #dc3545; color: white;">
                             <i class="fas fa-trash-alt"></i> Eliminar Seleccionados (<span id="selectedCount">0</span>)
                         </button>
@@ -1477,26 +1543,16 @@
                             <input type="text" id="formOrgImpl" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px;">
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div>
-                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Sector Humanitario *</label>
-                            <select id="formSector" required style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px;">
-                                <option value="">Seleccionar Sector...</option>
-                                <option value="Agua, saneamiento e higiene">ASH - Agua, saneamiento e higiene</option>
-                                <option value="Alojamiento, energia y enseres">AEE - Alojamiento, energía y enseres</option>
-                                <option value="Educación">EDU - Educación</option>
-                                <option value="Logística">LOG - Logística</option>
-                                <option value="Nutrición">NUT - Nutrición</option>
-                                <option value="Protección (Incluidas las AdR de VbG y NNA)">PRO - Protección (VbG y NNA)</option>
-                                <option value="Salud">SAL - Salud</option>
-                                <option value="Seguridad Alimentaria">SAMV - Seguridad Alimentaria</option>
-                                <option value="Coordinación">COO - Coordinación</option>
-                            </select>
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">
+                            Áreas de Intervención * <small style="color:#888; font-weight:400;">(seleccionar todas las que apliquen)</small>
+                        </label>
+                        <div id="formSectoresContainer" class="form-parroquia-multi" style="max-height: 200px;">
+                            <!-- populated by initFormSectores() -->
                         </div>
-                        <div>
-                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Área de intervención complementaria</label>
-                            <input type="text" id="formArea" placeholder="Ej: Salud; Educación; Protección" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px;">
-                        </div>
+                        <!-- Hidden inputs for backward compatibility -->
+                        <input type="hidden" id="formArea" value="">
+                        <input type="hidden" id="formSector" value="">
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
@@ -1518,8 +1574,17 @@
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
                         <div>
-                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Parroquias</label>
-                            <input type="text" id="formParroquias" placeholder="Ej: Bolívar; Chiquinquirá" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px;">
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">
+                                Parroquia *
+                                <span style="font-weight:400; font-size:0.78rem; color:#c0392b; margin-left:6px;">
+                                    Un registro por parroquia
+                                </span>
+                            </label>
+                            <div id="formParroquiasContainer">
+                                <input type="text" id="formParroquias" class="form-parroquia-fallback"
+                                       placeholder="Seleccione un municipio primero">
+                            </div>
+                            <small id="formParroquiasHint" style="color: #888; font-size: 0.78rem; margin-top: 0.25rem; display: block;"></small>
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -1700,33 +1765,33 @@
             search: '',
             sector: '',
             dateStart: '',
-            dateEnd: ''
+            dateEnd: '',
+            parroquia: []
         };
         
-        // Function to expand semicolon-separated data for proper filtering
+        // Function to build expanded data for filtering
+        // In the current model each record already has ONE municipality and ONE parish.
+        // We create exactly one expanded row per record, preserving the original municipality
+        // value as-is (no splitting, no normalization that could drop records).
         function expandProjectData(projects) {
             const expanded = [];
-            
+
             projects.forEach((project, originalIndex) => {
-                // Extract semicolon-separated values
-                const municipalities = extractAndNormalizeMunicipalities(project['Municipio']);
-                const areas = project['Área de intervención complementaria'] 
+                const municipio = (project['Municipio'] || '').trim();
+                const areas = project['Área de intervención complementaria']
                     ? project['Área de intervención complementaria'].split(';').map(s => s.trim()).filter(s => s)
                     : [''];
-                
-                // For each municipality, create one expanded row
-                municipalities.forEach(municipality => {
-                    expanded.push({
-                        ...project,
-                        'Municipio': municipality,
-                        '_originalIndex': originalIndex,
-                        '_expandedMunicipality': municipality,
-                        '_expandedAreas': areas,
-                        '_isExpanded': true
-                    });
+
+                expanded.push({
+                    ...project,
+                    'Municipio': municipio,
+                    '_originalIndex': originalIndex,
+                    '_expandedMunicipality': municipio,
+                    '_expandedAreas': areas,
+                    '_isExpanded': true
                 });
             });
-            
+
             return expanded;
         }
 
@@ -1876,6 +1941,517 @@ const trujilloCoordinates = {
   'Juan Vicente Campo Elias': [9.5050, -70.4183],
   'Andres Bello': [9.6345, -70.8100]
 };
+
+        // ============================================
+        // PARROQUIAS DATA - Coordenadas y listados por municipio
+        // Extraído de Admin Maestro.xlsx (VE23=Zulia, VE11=Falcón, VE13=Lara, VE21=Trujillo)
+        // ============================================
+        const PARROQUIAS_DATA = {
+            'Zulia': {
+                'Almirante Padilla': [
+                    {name: 'Isla De Toas', code: 'VE230101', lat: 10.95677688, lon: -71.65515541},
+                    {name: 'Monagas', code: 'VE230102', lat: 11.02235263, lon: -71.69791358}
+                ],
+                'Baralt': [
+                    {name: 'San Timoteo', code: 'VE230201', lat: 9.82610992, lon: -71.0444318},
+                    {name: 'General Urdaneta', code: 'VE230202', lat: 9.67283433, lon: -70.97426941},
+                    {name: 'Libertador', code: 'VE230203', lat: 9.77819587, lon: -70.83251857},
+                    {name: 'Manuel Guanipa Matos', code: 'VE230204', lat: 10.11326396, lon: -70.85481154},
+                    {name: 'Marcelino Briceño', code: 'VE230205', lat: 9.65865385, lon: -70.85542054},
+                    {name: 'Pueblo Nuevo', code: 'VE230206', lat: 9.87575103, lon: -70.86854573}
+                ],
+                'Cabimas': [
+                    {name: 'Ambrosio', code: 'VE230301', lat: 10.40730708, lon: -71.46426992},
+                    {name: 'Carmen Herrera', code: 'VE230302', lat: 10.39205535, lon: -71.45596568},
+                    {name: 'Germán Ríos Linares', code: 'VE230303', lat: 10.42877197, lon: -71.43429215},
+                    {name: 'La Rosa', code: 'VE230304', lat: 10.37722076, lon: -71.44335776},
+                    {name: 'Jorge Hernández', code: 'VE230305', lat: 10.37730405, lon: -71.39205003},
+                    {name: 'Rómulo Betancourt', code: 'VE230306', lat: 10.40155188, lon: -71.40298947},
+                    {name: 'San Benito', code: 'VE230307', lat: 10.42788393, lon: -71.35898203},
+                    {name: 'Arístides Calvani', code: 'VE230308', lat: 10.4153429, lon: -71.14081185},
+                    {name: 'Punta Gorda', code: 'VE230309', lat: 10.34338091, lon: -71.35601896}
+                ],
+                'Catatumbo': [
+                    {name: 'Encontrados', code: 'VE230401', lat: 9.25135288, lon: -72.11840551},
+                    {name: 'Udon Perez', code: 'VE230402', lat: 8.61289937, lon: -72.30642868}
+                ],
+                'Colón': [
+                    {name: 'San Carlos Del Zulia', code: 'VE230501', lat: 9.07247223, lon: -71.97588937},
+                    {name: 'Moralito', code: 'VE230502', lat: 8.77375991, lon: -71.8494445},
+                    {name: 'Santa Barbará', code: 'VE230503', lat: 9.03615547, lon: -71.84266996},
+                    {name: 'Santa Cruz Del Zulia', code: 'VE230504', lat: 8.71410071, lon: -72.06642588},
+                    {name: 'Urribarri', code: 'VE230505', lat: 8.95760467, lon: -71.72354234}
+                ],
+                'Francisco Javier Pulgar': [
+                    {name: 'Simón Rodríguez', code: 'VE230601', lat: 8.97942975, lon: -71.54102839},
+                    {name: 'Carlos Quevedo', code: 'VE230602', lat: 8.87455088, lon: -71.55982485},
+                    {name: 'Francisco Javier Pulgar', code: 'VE230603', lat: 8.7761912, lon: -71.63642466}
+                ],
+                'Indígena Bolivariano Guajira': [
+                    {name: 'Sinamaica', code: 'VE231501', lat: 11.10207225, lon: -71.856977},
+                    {name: 'Alta Guajira', code: 'VE231502', lat: 11.65954796, lon: -71.73231225},
+                    {name: 'Elías Sánchez Rubio', code: 'VE231503', lat: 11.1085186, lon: -72.1801979},
+                    {name: 'Guajira', code: 'VE231504', lat: 11.27691222, lon: -72.05228619}
+                ],
+                'Jesús Enrique Lossada': [
+                    {name: 'La Concepción', code: 'VE230701', lat: 10.62076533, lon: -71.88437041},
+                    {name: 'José Ramón Yepez', code: 'VE230702', lat: 10.62567377, lon: -72.4048419},
+                    {name: 'Mariano Parra León', code: 'VE230703', lat: 10.54561804, lon: -71.90063794},
+                    {name: 'San José', code: 'VE230704', lat: 10.70755965, lon: -71.84573068}
+                ],
+                'Jesús María Semprún': [
+                    {name: 'Jesús María Semprum', code: 'VE230801', lat: 8.86605613, lon: -72.54016179},
+                    {name: 'Bari', code: 'VE230802', lat: 9.27535351, lon: -72.82093249}
+                ],
+                'La Cañada de Urdaneta': [
+                    {name: 'Concepción', code: 'VE230901', lat: 10.41905757, lon: -71.81480657},
+                    {name: 'Andrés Bello', code: 'VE230902', lat: 10.43855889, lon: -72.11024542},
+                    {name: 'Chiquinquira', code: 'VE230903', lat: 10.47452338, lon: -71.78205476},
+                    {name: 'El Carmelo', code: 'VE230904', lat: 10.36272185, lon: -71.91153555},
+                    {name: 'Potreritos', code: 'VE230905', lat: 10.23876184, lon: -71.95216404}
+                ],
+                'Lagunillas': [
+                    {name: 'Alonso De Ojeda', code: 'VE231001', lat: 10.19826876, lon: -71.29637316},
+                    {name: 'Libertad', code: 'VE231002', lat: 10.23400969, lon: -71.30343356},
+                    {name: 'Campo Lara', code: 'VE231003', lat: 10.16551269, lon: -71.11022584},
+                    {name: 'Eleazar López Contreras', code: 'VE231004', lat: 10.31494235, lon: -71.07529209},
+                    {name: 'Venezuela', code: 'VE231005', lat: 10.1083748, lon: -71.21396965},
+                    {name: 'El Danto', code: 'VE231006', lat: 10.20885978, lon: -71.23520202}
+                ],
+                'Machiques de Perijá': [
+                    {name: 'Libertad', code: 'VE231101', lat: 9.91526924, lon: -72.78148833},
+                    {name: 'Bartolomé De Las Casas', code: 'VE231102', lat: 9.79297587, lon: -72.29469166},
+                    {name: 'Rio Negro', code: 'VE231103', lat: 9.529503, lon: -72.58514808},
+                    {name: 'San José De Perija', code: 'VE231104', lat: 9.92167614, lon: -72.29234104}
+                ],
+                'Mara': [
+                    {name: 'San Rafael', code: 'VE231201', lat: 10.91548573, lon: -71.76621068},
+                    {name: 'La Sierrita', code: 'VE231202', lat: 10.81977671, lon: -71.94374544},
+                    {name: 'Las Parcelas', code: 'VE231203', lat: 10.94475232, lon: -71.90120858},
+                    {name: 'Luis De Vicente', code: 'VE231204', lat: 10.99519412, lon: -72.23509391},
+                    {name: 'Monseñor Marcos Sergio Godoy', code: 'VE231205', lat: 10.84214387, lon: -72.37365091},
+                    {name: 'Ricaurte', code: 'VE231206', lat: 10.80074047, lon: -71.7389154},
+                    {name: 'Tamare', code: 'VE231207', lat: 10.85493449, lon: -71.7452422}
+                ],
+                'Maracaibo': [
+                    {name: 'Antonio Borjas Romero', code: 'VE231301', lat: 10.68921099, lon: -71.7217935},
+                    {name: 'Bolívar', code: 'VE231302', lat: 10.64993628, lon: -71.61014671},
+                    {name: 'Cacique Mara', code: 'VE231303', lat: 10.65155726, lon: -71.64391442},
+                    {name: 'Caracciolo Parra Perez', code: 'VE231304', lat: 10.68653395, lon: -71.66086001},
+                    {name: 'Cecilio Acosta', code: 'VE231305', lat: 10.63493621, lon: -71.65006865},
+                    {name: 'Cristo De Aranza', code: 'VE231306', lat: 10.61724349, lon: -71.62294489},
+                    {name: 'Coquivacoa', code: 'VE231307', lat: 10.70701172, lon: -71.60963791},
+                    {name: 'Chiquinquira', code: 'VE231308', lat: 10.6663643, lon: -71.63146903},
+                    {name: 'Francisco Eugenio Bustamante', code: 'VE231309', lat: 10.63164734, lon: -71.69654468},
+                    {name: 'Idelfonso Vásquez', code: 'VE231310', lat: 10.73330932, lon: -71.66245439},
+                    {name: 'Juana De Ávila', code: 'VE231311', lat: 10.70405498, lon: -71.62969405},
+                    {name: 'Luis Hurtado Higuera', code: 'VE231312', lat: 10.5972916, lon: -71.6715812},
+                    {name: 'Manuel Dagnino', code: 'VE231313', lat: 10.61103918, lon: -71.64518953},
+                    {name: 'Olegario Villalobos', code: 'VE231314', lat: 10.67794309, lon: -71.60736521},
+                    {name: 'Raúl Leoni', code: 'VE231315', lat: 10.67106579, lon: -71.66885018},
+                    {name: 'Santa Lucia', code: 'VE231316', lat: 10.65750772, lon: -71.6005269},
+                    {name: 'Venancio Pulgar', code: 'VE231317', lat: 10.73314532, lon: -71.72780101},
+                    {name: 'San Isidro', code: 'VE231318', lat: 10.65045544, lon: -71.75451948}
+                ],
+                'Miranda': [
+                    {name: 'Altagracia', code: 'VE231401', lat: 10.72593479, lon: -71.48584982},
+                    {name: 'Ana María Campos', code: 'VE231402', lat: 10.70564966, lon: -71.32920131},
+                    {name: 'Faria', code: 'VE231403', lat: 10.85193329, lon: -71.29581697},
+                    {name: 'San Antonio', code: 'VE231404', lat: 10.56638599, lon: -71.14302954},
+                    {name: 'San José', code: 'VE231405', lat: 10.77814544, lon: -71.50809928},
+                    {name: 'José Antonio Chaves', code: 'VE231406', lat: 10.65774112, lon: -71.50448207}
+                ],
+                'Páez': [
+                    {name: 'Urribarri', code: 'VE232201', lat: 10.33, lon: -71.57},
+                    {name: 'Monseñor Pulido Méndez', code: 'VE232202', lat: 10.29, lon: -71.50}
+                ],
+                'Rosario de Perijá': [
+                    {name: 'El Rosario', code: 'VE231601', lat: 10.35743497, lon: -72.41655873},
+                    {name: 'Donaldo García', code: 'VE231602', lat: 10.00513588, lon: -72.12848811},
+                    {name: 'Sixto Zambrano', code: 'VE231603', lat: 10.14589646, lon: -72.31592139}
+                ],
+                'San Francisco': [
+                    {name: 'San Francisco', code: 'VE231701', lat: 10.5567605, lon: -71.63324955},
+                    {name: 'El Bajo', code: 'VE231702', lat: 10.52186181, lon: -71.64125825},
+                    {name: 'Domitila Flores', code: 'VE231703', lat: 10.54552653, lon: -71.66217684},
+                    {name: 'Francisco Ochoa', code: 'VE231704', lat: 10.58567588, lon: -71.62989209},
+                    {name: 'Los Cortijos', code: 'VE231705', lat: 10.52508318, lon: -71.73738724},
+                    {name: 'Marcial Hernández', code: 'VE231706', lat: 10.56962721, lon: -71.72834731},
+                    {name: 'José Domingo Rus', code: 'VE231707', lat: 10.52677327, lon: -71.68292507}
+                ],
+                'Santa Rita': [
+                    {name: 'Santa Rita', code: 'VE231801', lat: 10.53671595, lon: -71.461998},
+                    {name: 'El Mene', code: 'VE231802', lat: 10.47243982, lon: -71.43165444},
+                    {name: 'José Cenovio Urribarri', code: 'VE231803', lat: 10.58711117, lon: -71.47635157},
+                    {name: 'Pedro Lucas Urribarri', code: 'VE231804', lat: 10.51592606, lon: -71.31352876}
+                ],
+                'Simón Bolívar': [
+                    {name: 'Manuel Manrique', code: 'VE231901', lat: 10.25938252, lon: -71.33698613},
+                    {name: 'Rafael María Baralt', code: 'VE231902', lat: 10.29980634, lon: -71.36549712},
+                    {name: 'Rafael Urdaneta', code: 'VE231903', lat: 10.32010704, lon: -71.24391472}
+                ],
+                'Sucre': [
+                    {name: 'Bobures', code: 'VE232001', lat: 9.21127513, lon: -71.16619758},
+                    {name: 'El Batey', code: 'VE232002', lat: 9.17517246, lon: -71.12356352},
+                    {name: 'Gibraltar', code: 'VE232003', lat: 9.26689968, lon: -71.05465628},
+                    {name: 'Heras', code: 'VE232004', lat: 9.0559997, lon: -71.20943579},
+                    {name: 'Monseñor Arturo Celestino Álvarez', code: 'VE232005', lat: 9.00712309, lon: -71.34801627},
+                    {name: 'Rómulo Gallegos', code: 'VE232006', lat: 9.19173083, lon: -70.98819216}
+                ],
+                'Valmore Rodríguez': [
+                    {name: 'La Victoria', code: 'VE232101', lat: 9.94805921, lon: -71.06304024},
+                    {name: 'Rafael Urdaneta', code: 'VE232102', lat: 10.02133325, lon: -71.12825529},
+                    {name: 'Raúl Cuenca', code: 'VE232103', lat: 10.25135019, lon: -70.92579509}
+                ]
+            },
+            'Falcón': {
+                'Acosta': [
+                    {name: 'San Juan De Los Cayos', code: 'VE110101', lat: 11.11958179, lon: -68.43776904},
+                    {name: 'Capadare', code: 'VE110102', lat: 11.12839694, lon: -68.5668909},
+                    {name: 'La Pastora', code: 'VE110103', lat: 11.25373248, lon: -68.64769535},
+                    {name: 'Libertador', code: 'VE110104', lat: 11.03439017, lon: -68.4610218}
+                ],
+                'Bolívar': [
+                    {name: 'San Luis', code: 'VE110201', lat: 11.10477092, lon: -69.66637322},
+                    {name: 'Aracua', code: 'VE110202', lat: 10.98470846, lon: -69.65214642},
+                    {name: 'La Peña', code: 'VE110203', lat: 11.15198487, lon: -69.77106732}
+                ],
+                'Buchivacoa': [
+                    {name: 'Capatarida', code: 'VE110301', lat: 10.8809039, lon: -70.54637133},
+                    {name: 'Bariro', code: 'VE110302', lat: 10.7276783, lon: -70.75393381},
+                    {name: 'Borojo', code: 'VE110303', lat: 11.05663316, lon: -70.80909157},
+                    {name: 'Guajiro', code: 'VE110304', lat: 10.49593928, lon: -70.73041618},
+                    {name: 'Seque', code: 'VE110305', lat: 10.92004235, lon: -70.8242768},
+                    {name: 'Zazarida', code: 'VE110306', lat: 11.14562733, lon: -70.43668207}
+                ],
+                'Cacique Manaure': [
+                    {name: 'Cacique Manaure', code: 'VE110401', lat: 10.98324426, lon: -68.5492186}
+                ],
+                'Carirubana': [
+                    {name: 'Carirubana', code: 'VE110501', lat: 11.70800214, lon: -70.17704781},
+                    {name: 'Norte', code: 'VE110502', lat: 11.72300672, lon: -70.1848683},
+                    {name: 'Punta Cardón', code: 'VE110503', lat: 11.68273997, lon: -70.10911622},
+                    {name: 'Santa Ana', code: 'VE110504', lat: 11.7417384, lon: -69.92657822}
+                ],
+                'Colina': [
+                    {name: 'La Vela De Coro', code: 'VE110601', lat: 11.4500542, lon: -69.52397847},
+                    {name: 'Acurigua', code: 'VE110602', lat: 11.28831308, lon: -69.49053253},
+                    {name: 'Guaibacoa', code: 'VE110603', lat: 11.399895, lon: -69.45788124},
+                    {name: 'Las Calderas', code: 'VE110604', lat: 11.40104443, lon: -69.59439601},
+                    {name: 'Macoruca', code: 'VE110605', lat: 11.21806535, lon: -69.43744817}
+                ],
+                'Dabajuro': [
+                    {name: 'Dabajuro', code: 'VE110701', lat: 10.71471638, lon: -70.62736998}
+                ],
+                'Democracia': [
+                    {name: 'Pedregal', code: 'VE110801', lat: 10.97000583, lon: -70.17015703},
+                    {name: 'Agua Clara', code: 'VE110802', lat: 11.14909988, lon: -69.97330562},
+                    {name: 'Avaria', code: 'VE110803', lat: 10.70743323, lon: -70.37390265},
+                    {name: 'Piedra Grande', code: 'VE110804', lat: 10.79659042, lon: -69.93979763},
+                    {name: 'Purureche', code: 'VE110805', lat: 10.74597896, lon: -70.15041157}
+                ],
+                'Falcón': [
+                    {name: 'Pueblo Nuevo', code: 'VE110901', lat: 11.9761321, lon: -69.94726674},
+                    {name: 'Adicora', code: 'VE110902', lat: 12.00778415, lon: -69.85400189},
+                    {name: 'Baraived', code: 'VE110903', lat: 11.73564892, lon: -69.79759081},
+                    {name: 'Buena Vista', code: 'VE110904', lat: 11.87951099, lon: -69.92392711},
+                    {name: 'Jadacaquiva', code: 'VE110905', lat: 11.97432721, lon: -70.12687692},
+                    {name: 'Moruy', code: 'VE110906', lat: 11.81590984, lon: -70.03644753},
+                    {name: 'Adaure', code: 'VE110907', lat: 11.89323983, lon: -69.99223891},
+                    {name: 'El Hato', code: 'VE110908', lat: 11.94675168, lon: -69.85344885},
+                    {name: 'El Vinculo', code: 'VE110909', lat: 12.10398171, lon: -69.97837865}
+                ],
+                'Federación': [
+                    {name: 'Churuguara', code: 'VE111001', lat: 10.83359155, lon: -69.53256139},
+                    {name: 'Agua Larga', code: 'VE111002', lat: 10.87537064, lon: -69.74504984},
+                    {name: 'El Paují', code: 'VE111003', lat: 10.78777135, lon: -69.65896754},
+                    {name: 'Independencia', code: 'VE111004', lat: 10.75618967, lon: -69.76570208},
+                    {name: 'Maparari', code: 'VE111005', lat: 10.78940583, lon: -69.39898656}
+                ],
+                'Iturriza': [
+                    {name: 'Chichiriviche', code: 'VE111501', lat: 10.92339778, lon: -68.31984791},
+                    {name: 'Boca De Tocuyo', code: 'VE111502', lat: 11.03076388, lon: -68.34155124},
+                    {name: 'Tocuyo De La Costa', code: 'VE111503', lat: 10.8318917, lon: -68.65525681}
+                ],
+                'Jacura': [
+                    {name: 'Jacura', code: 'VE111101', lat: 11.07251923, lon: -68.87049143},
+                    {name: 'Agua Linda', code: 'VE111102', lat: 11.00489884, lon: -69.06509329},
+                    {name: 'Araurima', code: 'VE111103', lat: 10.91352425, lon: -68.75880756}
+                ],
+                'Los Taques': [
+                    {name: 'Los Taques', code: 'VE111201', lat: 11.84549364, lon: -70.22999773},
+                    {name: 'Judibana', code: 'VE111202', lat: 11.77965584, lon: -70.15224719}
+                ],
+                'Mauroa': [
+                    {name: 'Mene De Mauroa', code: 'VE111301', lat: 10.58616368, lon: -70.93908986},
+                    {name: 'Casigua', code: 'VE111302', lat: 10.88137402, lon: -70.97342666},
+                    {name: 'San Félix', code: 'VE111303', lat: 10.87293513, lon: -71.14177264}
+                ],
+                'Miranda': [
+                    {name: 'San Antonio', code: 'VE111401', lat: 11.32876197, lon: -69.77166326},
+                    {name: 'San Gabriel', code: 'VE111402', lat: 11.46930807, lon: -69.67113515},
+                    {name: 'Santa Ana', code: 'VE111403', lat: 11.40197964, lon: -69.78558082},
+                    {name: 'Guzmán Guillermo', code: 'VE111404', lat: 11.282723, lon: -69.65977178},
+                    {name: 'Mitare', code: 'VE111405', lat: 11.39166569, lon: -70.02851841},
+                    {name: 'Rio Seco', code: 'VE111406', lat: 11.29896909, lon: -70.18768099},
+                    {name: 'Sabaneta', code: 'VE111407', lat: 11.23181048, lon: -70.00472221}
+                ],
+                'Palmasola': [
+                    {name: 'Palmasola', code: 'VE111601', lat: 10.67682228, lon: -68.56365561}
+                ],
+                'Petit': [
+                    {name: 'Cabure', code: 'VE111701', lat: 11.04100763, lon: -69.44420492},
+                    {name: 'Colina', code: 'VE111702', lat: 11.1324348, lon: -69.40033938},
+                    {name: 'Curimagua', code: 'VE111703', lat: 11.18187153, lon: -69.66416927}
+                ],
+                'Píritu': [
+                    {name: 'Piritu', code: 'VE111801', lat: 11.32151139, lon: -69.09518999},
+                    {name: 'San José De La Costa', code: 'VE111802', lat: 11.3482799, lon: -68.87488353}
+                ],
+                'San Francisco': [
+                    {name: 'San Francisco', code: 'VE111901', lat: 11.13600451, lon: -68.71278797}
+                ],
+                'Silva': [
+                    {name: 'Tucacas', code: 'VE112001', lat: 10.80123111, lon: -68.45141089},
+                    {name: 'Boca De Aroa', code: 'VE112002', lat: 10.64940653, lon: -68.37900929}
+                ],
+                'Sucre': [
+                    {name: 'Sucre', code: 'VE112101', lat: 11.04202683, lon: -69.7438609},
+                    {name: 'Pecaya', code: 'VE112102', lat: 11.00330059, lon: -69.92490702}
+                ],
+                'Tocópero': [
+                    {name: 'Tocopero', code: 'VE112201', lat: 11.48894209, lon: -69.233147}
+                ],
+                'Unión': [
+                    {name: 'Santa Cruz De Bucaral', code: 'VE112301', lat: 10.8332294, lon: -69.27158513},
+                    {name: 'El Charal', code: 'VE112302', lat: 10.9092948, lon: -69.19982363},
+                    {name: 'Las Vegas Deltuy', code: 'VE112303', lat: 10.75359836, lon: -69.06949238}
+                ],
+                'Urumaco': [
+                    {name: 'Urumaco', code: 'VE112401', lat: 11.20296812, lon: -70.24416981},
+                    {name: 'Bruzual', code: 'VE112402', lat: 11.00972272, lon: -70.33166994}
+                ],
+                'Zamora': [
+                    {name: 'Puerto Cumarebo', code: 'VE112501', lat: 11.4015088, lon: -69.37212241},
+                    {name: 'La Ciénaga', code: 'VE112502', lat: 11.45652246, lon: -69.35552471},
+                    {name: 'La Soledad', code: 'VE112503', lat: 11.41730855, lon: -69.39129029},
+                    {name: 'Pueblo Cumarebo', code: 'VE112504', lat: 11.42026937, lon: -69.27318417},
+                    {name: 'Zazarida', code: 'VE112505', lat: 11.24278665, lon: -69.30867761}
+                ]
+            },
+            'Lara': {
+                'Andrés Eloy Blanco': [
+                    {name: 'Pio Tamayo', code: 'VE130101', lat: 9.67828302, lon: -69.62995324},
+                    {name: 'Quebrada Honda De Guache', code: 'VE130102', lat: 9.59018399, lon: -69.48768461},
+                    {name: 'Yacambu', code: 'VE130103', lat: 9.70245754, lon: -69.45871387}
+                ],
+                'Crespo': [
+                    {name: 'Freitez', code: 'VE130201', lat: 10.31526712, lon: -69.10789116},
+                    {name: 'José María Blanco', code: 'VE130202', lat: 10.34603488, lon: -69.22763191}
+                ],
+                'Iribarren': [
+                    {name: 'Catedral', code: 'VE130301', lat: 10.09649186, lon: -69.29135222},
+                    {name: 'Concepción', code: 'VE130302', lat: 10.05506446, lon: -69.33301511},
+                    {name: 'El Cují', code: 'VE130303', lat: 10.18640708, lon: -69.35835532},
+                    {name: 'Juan De Villegas', code: 'VE130304', lat: 10.03197771, lon: -69.45899923},
+                    {name: 'Santa Rosa', code: 'VE130305', lat: 10.10574998, lon: -69.2401626},
+                    {name: 'Tamaca', code: 'VE130306', lat: 10.24544264, lon: -69.27677288},
+                    {name: 'Unión', code: 'VE130307', lat: 10.12635374, lon: -69.3928566},
+                    {name: 'Aguedo Felipe Alvarado', code: 'VE130308', lat: 10.33061695, lon: -69.47908661},
+                    {name: 'Buena Vista', code: 'VE130309', lat: 9.83819975, lon: -69.43081789},
+                    {name: 'Juárez', code: 'VE130310', lat: 9.87253181, lon: -69.34321909}
+                ],
+                'Jiménez': [
+                    {name: 'Juan Bautista Rodríguez', code: 'VE130401', lat: 9.98086183, lon: -69.68019183},
+                    {name: 'Cuara', code: 'VE130402', lat: 9.86866032, lon: -69.60043793},
+                    {name: 'Diego De Lozada', code: 'VE130403', lat: 9.79152775, lon: -69.56697152},
+                    {name: 'Paraíso De San José', code: 'VE130404', lat: 9.79920161, lon: -69.50820943},
+                    {name: 'San Miguel', code: 'VE130405', lat: 9.86131583, lon: -69.5173355},
+                    {name: 'Tintorero', code: 'VE130406', lat: 10.02821664, lon: -69.5897456},
+                    {name: 'Cabo José Dorante', code: 'VE130407', lat: 9.88224512, lon: -69.68425194},
+                    {name: 'Coronel Mariano Peraza', code: 'VE130408', lat: 9.98113561, lon: -69.62207757}
+                ],
+                'Morán': [
+                    {name: 'Bolívar', code: 'VE130501', lat: 9.82351904, lon: -69.80727837},
+                    {name: 'Anzoátegui', code: 'VE130502', lat: 9.60890229, lon: -69.88498006},
+                    {name: 'Guárico', code: 'VE130503', lat: 9.59148419, lon: -69.7453833},
+                    {name: 'Hilario Luna Y Luna', code: 'VE130504', lat: 9.46845975, lon: -69.75842021},
+                    {name: 'Humocaro Alto', code: 'VE130505', lat: 9.57110221, lon: -70.03841633},
+                    {name: 'Humocaro Bajo', code: 'VE130506', lat: 9.68841285, lon: -69.97708399},
+                    {name: 'La Candelaria', code: 'VE130507', lat: 9.45504152, lon: -70.0450954},
+                    {name: 'Moran', code: 'VE130508', lat: 9.82017507, lon: -69.98877793}
+                ],
+                'Palavecino': [
+                    {name: 'Cabudare', code: 'VE130601', lat: 10.03537569, lon: -69.24943579},
+                    {name: 'José Gregorio Bastidas', code: 'VE130602', lat: 9.97606442, lon: -69.21350106},
+                    {name: 'Agua Viva', code: 'VE130603', lat: 9.97243387, lon: -69.2961193}
+                ],
+                'Simón Planas': [
+                    {name: 'Sarare', code: 'VE130701', lat: 9.81740667, lon: -69.14621444},
+                    {name: 'Buria', code: 'VE130702', lat: 9.89965902, lon: -69.01991248},
+                    {name: 'Gustavo Vegas León', code: 'VE130703', lat: 9.74185913, lon: -69.21557363}
+                ],
+                'Torres': [
+                    {name: 'Trinidad Samuel', code: 'VE130801', lat: 10.13133837, lon: -70.1196252},
+                    {name: 'Antonio Díaz', code: 'VE130802', lat: 9.9851882, lon: -69.93674577},
+                    {name: 'Reyes Vargas', code: 'VE130803', lat: 10.3537167, lon: -69.79520694},
+                    {name: 'Castañeda', code: 'VE130804', lat: 10.11578459, lon: -69.75757686},
+                    {name: 'Cecilio Zubillaga', code: 'VE130805', lat: 9.8562293, lon: -70.17089919},
+                    {name: 'Chiquinquira', code: 'VE130806', lat: 10.3069911, lon: -70.03358279},
+                    {name: 'El Blanco', code: 'VE130807', lat: 10.29703967, lon: -70.51006936},
+                    {name: 'Espinoza De Los Monteros', code: 'VE130808', lat: 10.16881631, lon: -69.88636696},
+                    {name: 'Lara', code: 'VE130809', lat: 9.90320218, lon: -70.06885658},
+                    {name: 'Las Mercedes', code: 'VE130810', lat: 10.0700142, lon: -70.40534767},
+                    {name: 'Manuel Morillo', code: 'VE130811', lat: 9.91401255, lon: -70.27284843},
+                    {name: 'Montaña Verde', code: 'VE130812', lat: 10.08293383, lon: -70.7130866},
+                    {name: 'Montes De Oca', code: 'VE130813', lat: 10.341279, lon: -70.35737295},
+                    {name: 'Torres', code: 'VE130814', lat: 9.79852107, lon: -70.12146488},
+                    {name: 'Camacaro', code: 'VE130816', lat: 10.28157537, lon: -69.93329084},
+                    {name: 'Altagracia', code: 'VE130817', lat: 10.42821644, lon: -70.24134306}
+                ],
+                'Urdaneta': [
+                    {name: 'Siquisique', code: 'VE130901', lat: 10.579766, lon: -69.70561694},
+                    {name: 'Moroturo', code: 'VE130902', lat: 10.59452778, lon: -69.13246802},
+                    {name: 'San Miguel', code: 'VE130903', lat: 10.58226917, lon: -69.43275043},
+                    {name: 'Xaguas', code: 'VE130904', lat: 10.5764818, lon: -70.03484248}
+                ]
+            },
+            'Trujillo': {
+                'Andrés Bello': [
+                    {name: 'Santa Isabel', code: 'VE210101', lat: 9.63473675, lon: -70.79678204},
+                    {name: 'Araguaney', code: 'VE210102', lat: 9.59534955, lon: -70.69138568},
+                    {name: 'El Jaguito', code: 'VE210103', lat: 9.5894967, lon: -70.76641451},
+                    {name: 'La Esperanza', code: 'VE210104', lat: 9.68368815, lon: -70.7042042}
+                ],
+                'Boconó': [
+                    {name: 'Bocono', code: 'VE210201', lat: 9.23094352, lon: -70.29624743},
+                    {name: 'El Carmen', code: 'VE210202', lat: 9.25813534, lon: -70.23347729},
+                    {name: 'Mosquey', code: 'VE210203', lat: 9.28885602, lon: -70.18718061},
+                    {name: 'Ayacucho', code: 'VE210204', lat: 9.32692099, lon: -70.13288858},
+                    {name: 'Burbusay', code: 'VE210205', lat: 9.42682152, lon: -70.27335928},
+                    {name: 'General Rivas', code: 'VE210206', lat: 9.04616842, lon: -70.49426142},
+                    {name: 'Guaramacal', code: 'VE210207', lat: 9.14741708, lon: -70.16444964},
+                    {name: 'Vega De Guaramacal', code: 'VE210208', lat: 9.25584252, lon: -70.11947088},
+                    {name: 'Monseñor Jáuregui', code: 'VE210209', lat: 9.09323534, lon: -70.34786432},
+                    {name: 'Rafael Rangel', code: 'VE210210', lat: 9.33975516, lon: -70.26820786},
+                    {name: 'San Miguel', code: 'VE210211', lat: 9.40660169, lon: -70.17044203},
+                    {name: 'San José', code: 'VE210212', lat: 9.18473068, lon: -70.3746637}
+                ],
+                'Bolívar': [
+                    {name: 'Sabana Grande', code: 'VE210301', lat: 9.4261077, lon: -70.81895564},
+                    {name: 'Cheregue', code: 'VE210302', lat: 9.3395, lon: -70.83911563},
+                    {name: 'Granados', code: 'VE210303', lat: 9.39330321, lon: -70.8409197}
+                ],
+                'Campo Elías': [
+                    {name: 'Campo Elías', code: 'VE210801', lat: 9.42658756, lon: -70.07784448},
+                    {name: 'Arnoldo Gabaldon', code: 'VE210802', lat: 9.37444236, lon: -70.0942854}
+                ],
+                'Candelaria': [
+                    {name: 'Chejende', code: 'VE210401', lat: 9.69956074, lon: -70.42811053},
+                    {name: 'Arnoldo Gabaldon', code: 'VE210402', lat: 9.62280549, lon: -70.49211025},
+                    {name: 'Bolivia', code: 'VE210403', lat: 9.55892836, lon: -70.34745396},
+                    {name: 'Carrillo', code: 'VE210404', lat: 9.57352847, lon: -70.39918203},
+                    {name: 'Cegarra', code: 'VE210405', lat: 9.57075394, lon: -70.35259827},
+                    {name: 'Manuel Salvador Ulloa', code: 'VE210406', lat: 9.71094956, lon: -70.5245357},
+                    {name: 'San José', code: 'VE210407', lat: 9.63677967, lon: -70.45437385}
+                ],
+                'Carache': [
+                    {name: 'Carache', code: 'VE210501', lat: 9.61657051, lon: -70.19915077},
+                    {name: 'Cuicas', code: 'VE210502', lat: 9.73307748, lon: -70.30683181},
+                    {name: 'La Concepción', code: 'VE210503', lat: 9.51225418, lon: -70.21428748},
+                    {name: 'Panamericana', code: 'VE210504', lat: 9.73423642, lon: -70.38745246},
+                    {name: 'Santa Cruz', code: 'VE210505', lat: 9.72513806, lon: -70.16240836}
+                ],
+                'Carvajal': [
+                    {name: 'Carvajal', code: 'VE211601', lat: 9.30127172, lon: -70.58083425},
+                    {name: 'Antonio Nicolás Briceño', code: 'VE211602', lat: 9.36874398, lon: -70.56973578},
+                    {name: 'Campo Alegre', code: 'VE211603', lat: 9.3416974, lon: -70.57495823},
+                    {name: 'José Leonardo Suarez', code: 'VE211604', lat: 9.41192721, lon: -70.56442131}
+                ],
+                'Escuque': [
+                    {name: 'Escuque', code: 'VE210601', lat: 9.24959787, lon: -70.72784959},
+                    {name: 'La Unión', code: 'VE210602', lat: 9.29285177, lon: -70.73540058},
+                    {name: 'Sabana Libre', code: 'VE210603', lat: 9.34694748, lon: -70.64633651},
+                    {name: 'Santa Rita', code: 'VE210604', lat: 9.3148462, lon: -70.65598541}
+                ],
+                'La Ceiba': [
+                    {name: 'Santa Apolonia', code: 'VE210901', lat: 9.44859149, lon: -71.00892694},
+                    {name: 'El Progreso', code: 'VE210902', lat: 9.42605689, lon: -70.94501304},
+                    {name: 'La Ceiba', code: 'VE210903', lat: 9.50214887, lon: -71.04884375},
+                    {name: 'Tres De Febrero', code: 'VE210904', lat: 9.55521209, lon: -70.95907876}
+                ],
+                'Miranda': [
+                    {name: 'El Dividive', code: 'VE211001', lat: 9.46847877, lon: -70.71784853},
+                    {name: 'Agua Santa', code: 'VE211002', lat: 9.48792819, lon: -70.65796393},
+                    {name: 'Agua Caliente', code: 'VE211003', lat: 9.60934419, lon: -70.61109854},
+                    {name: 'El Cenizo', code: 'VE211004', lat: 9.53655017, lon: -70.74590386},
+                    {name: 'Valerita', code: 'VE211005', lat: 9.68172333, lon: -70.57894532}
+                ],
+                'Monte Carmelo': [
+                    {name: 'Monte Carmelo', code: 'VE211101', lat: 9.17006965, lon: -70.82190883},
+                    {name: 'Buena Vista', code: 'VE211102', lat: 9.28607658, lon: -70.87887043},
+                    {name: 'Santa María Del Horcon', code: 'VE211103', lat: 9.33722078, lon: -70.97609003}
+                ],
+                'Motatán': [
+                    {name: 'Motatan', code: 'VE211201', lat: 9.39158703, lon: -70.61065973},
+                    {name: 'El Baño', code: 'VE211202', lat: 9.39743368, lon: -70.64053974},
+                    {name: 'Jalisco', code: 'VE211203', lat: 9.48395755, lon: -70.60346039}
+                ],
+                'Márquez Cañizales': [
+                    {name: 'El Socorro', code: 'VE210701', lat: 9.83086981, lon: -70.50343172},
+                    {name: 'Antonio José De Sucre', code: 'VE210702', lat: 9.74884107, lon: -70.63562196},
+                    {name: 'Los Caprichos', code: 'VE210703', lat: 9.92903467, lon: -70.63070552}
+                ],
+                'Pampanito': [
+                    {name: 'Pampanito', code: 'VE211401', lat: 9.41629812, lon: -70.50151505},
+                    {name: 'La Concepción', code: 'VE211402', lat: 9.42655705, lon: -70.47204228},
+                    {name: 'Pampanito Ii', code: 'VE211403', lat: 9.42819456, lon: -70.53642459}
+                ],
+                'Pampán': [
+                    {name: 'Pampan', code: 'VE211301', lat: 9.53013984, lon: -70.5333576},
+                    {name: 'Flor De Patria', code: 'VE211302', lat: 9.51562706, lon: -70.47256108},
+                    {name: 'La Paz', code: 'VE211303', lat: 9.54549332, lon: -70.45543314},
+                    {name: 'Santa Ana', code: 'VE211304', lat: 9.47854691, lon: -70.35423753}
+                ],
+                'Rangel': [
+                    {name: 'Betijoque', code: 'VE211501', lat: 9.32714321, lon: -70.76843577},
+                    {name: 'La Pueblita', code: 'VE211502', lat: 9.39189664, lon: -70.73193618},
+                    {name: 'Los Cedros', code: 'VE211503', lat: 9.33281975, lon: -70.73090508},
+                    {name: 'José Gregorio Hernández', code: 'VE211504', lat: 9.36798976, lon: -70.69320861}
+                ],
+                'Sucre': [
+                    {name: 'Sabana De Mendoza', code: 'VE211701', lat: 9.42111093, lon: -70.72548059},
+                    {name: 'El Paraíso', code: 'VE211702', lat: 9.56164554, lon: -70.85954728},
+                    {name: 'Junín', code: 'VE211703', lat: 9.49651371, lon: -70.86052059},
+                    {name: 'Valmore Rodríguez', code: 'VE211704', lat: 9.46864517, lon: -70.78906382}
+                ],
+                'Trujillo': [
+                    {name: 'Andrés Linares', code: 'VE211801', lat: 9.24583727, lon: -70.46522039},
+                    {name: 'Chiquinquira', code: 'VE211802', lat: 9.33469002, lon: -70.51529993},
+                    {name: 'Cristóbal Mendoza', code: 'VE211803', lat: 9.38280678, lon: -70.44297546},
+                    {name: 'Cruz Carrillo', code: 'VE211804', lat: 9.39692635, lon: -70.3660351},
+                    {name: 'Matriz', code: 'VE211805', lat: 9.34292484, lon: -70.36742354},
+                    {name: 'Monseñor Carrillo', code: 'VE211806', lat: 9.29785115, lon: -70.41384959},
+                    {name: 'Tres Esquinas', code: 'VE211807', lat: 9.41279458, lon: -70.45452216}
+                ],
+                'Urdaneta': [
+                    {name: 'La Quebrada', code: 'VE211901', lat: 9.14984277, lon: -70.56544216},
+                    {name: 'Cabimbu', code: 'VE211902', lat: 9.16680047, lon: -70.47757123},
+                    {name: 'Jajo', code: 'VE211903', lat: 9.10327476, lon: -70.63883409},
+                    {name: 'La Mesa', code: 'VE211904', lat: 9.03894884, lon: -70.69055477},
+                    {name: 'Santiago', code: 'VE211905', lat: 9.22632094, lon: -70.53587904},
+                    {name: 'Tuñame', code: 'VE211906', lat: 9.04406912, lon: -70.59732674}
+                ],
+                'Valera': [
+                    {name: 'Juan Ignacio Montilla', code: 'VE212001', lat: 9.30712777, lon: -70.60644154},
+                    {name: 'La Beatriz', code: 'VE212002', lat: 9.25043575, lon: -70.60160074},
+                    {name: 'Mercedes Díaz', code: 'VE212003', lat: 9.30239911, lon: -70.62878613},
+                    {name: 'San Luis', code: 'VE212004', lat: 9.34144884, lon: -70.61273719},
+                    {name: 'La Puerta', code: 'VE212005', lat: 9.11507228, lon: -70.72539679},
+                    {name: 'Mendoza', code: 'VE212006', lat: 9.20717343, lon: -70.66771827}
+                ]
+            }
+        };
 
 // Current state variable
 let currentState = 'Zulia';
@@ -2039,35 +2615,39 @@ function getMapZoom() {
             return false;
         }
 
-        // Function to insert projects into Supabase
+        // Function to upsert projects into Supabase (insert or update by composite key)
+        // Requires unique constraint: ("Código del proyecto", "Municipio", "Parroquias")
         async function insertProjectsToSupabase(projects) {
             try {
                 if (!projects || projects.length === 0) {
-                    console.warn('No projects to insert');
+                    console.warn('No projects to upsert');
                     return false;
                 }
 
-                // Remove id field if exists (will be auto-generated)
-                const projectsToInsert = projects.map(p => {
-                    const { id, ...rest } = p;
+                // Remove id, created_at, updated_at — auto-managed by Supabase
+                const projectsToUpsert = projects.map(p => {
+                    const { id, created_at, updated_at, created_by, updated_by, ...rest } = p;
                     return rest;
                 });
 
                 const { data, error } = await supabaseClient
                     .from('proyectos')
-                    .insert(projectsToInsert)
+                    .upsert(projectsToUpsert, {
+                        onConflict: '"Código del proyecto","Municipio","Parroquias"',
+                        ignoreDuplicates: false
+                    })
                     .select();
 
                 if (error) {
-                    console.error('Supabase insert error:', error);
+                    console.error('Supabase upsert error:', error);
                     alert('Error al guardar en Supabase: ' + error.message);
                     return false;
                 }
 
-                console.log('✓ Inserted', data.length, 'projects to Supabase');
+                console.log('✓ Upserted', data.length, 'records to Supabase');
                 return true;
             } catch (e) {
-                console.error('Supabase insert error:', e);
+                console.error('Supabase upsert error:', e);
                 return false;
             }
         }
@@ -2172,6 +2752,278 @@ function getMapZoom() {
             applyFilters();
         }
 
+        // ============================================
+        // PARROQUIA FILTER FUNCTIONS
+        // ============================================
+
+        // Helper: find parish data for a municipality (searches all states if needed)
+        function getParroquiasForMunicipio(municipio, estado) {
+            if (!municipio) return [];
+            const searchStates = (estado && estado !== 'Todos')
+                ? [estado]
+                : ['Zulia', 'Falcón', 'Lara', 'Trujillo'];
+            for (const st of searchStates) {
+                if (PARROQUIAS_DATA[st] && PARROQUIAS_DATA[st][municipio]) {
+                    return PARROQUIAS_DATA[st][municipio];
+                }
+            }
+            return [];
+        }
+
+        // Update/populate the sidebar parish filter based on current municipality selection
+        function updateParroquiaFilter() {
+            const section = document.getElementById('parroquiaFilterSection');
+            const dropdown = document.getElementById('parroquiaDropdown');
+            if (!section || !dropdown) return;
+
+            const selectedMunicipios = getSelectedMunicipalities();
+
+            // Show when at least 1 municipality is selected
+            if (selectedMunicipios.length === 0) {
+                section.classList.remove('visible');
+                currentFilters.parroquia = [];
+                return;
+            }
+
+            // Collect parishes for ALL selected municipalities
+            const hasAny = selectedMunicipios.some(m => getParroquiasForMunicipio(m, currentState).length > 0);
+            if (!hasAny) {
+                section.classList.remove('visible');
+                return;
+            }
+
+            // Populate dropdown — group by municipality when multiple selected
+            dropdown.innerHTML = `
+                <div class="multi-select-option">
+                    <input type="checkbox" id="all-parroquias" checked>
+                    <label for="all-parroquias">Todas las Parroquias</label>
+                </div>
+            `;
+
+            if (selectedMunicipios.length === 1) {
+                // Single municipality — flat list
+                const parroquias = getParroquiasForMunicipio(selectedMunicipios[0], currentState);
+                parroquias.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'multi-select-option';
+                    div.innerHTML = `
+                        <input type="checkbox" class="parroquia-checkbox" value="${p.name}" checked>
+                        <label style="cursor:pointer">${p.name}</label>
+                    `;
+                    dropdown.appendChild(div);
+                });
+            } else {
+                // Multiple municipalities — grouped with headers
+                selectedMunicipios.forEach(municipio => {
+                    const parroquias = getParroquiasForMunicipio(municipio, currentState);
+                    if (parroquias.length === 0) return;
+                    const header = document.createElement('div');
+                    header.style.cssText = 'padding:3px 8px; font-size:0.72rem; font-weight:700; color:#005D92; background:#eef5fb; border-top:1px solid #c8dce8; margin-top:2px; text-transform:uppercase; letter-spacing:0.03em;';
+                    header.textContent = municipio;
+                    dropdown.appendChild(header);
+                    parroquias.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = 'multi-select-option';
+                        div.innerHTML = `
+                            <input type="checkbox" class="parroquia-checkbox" value="${p.name}" checked>
+                            <label style="cursor:pointer">${p.name}</label>
+                        `;
+                        dropdown.appendChild(div);
+                    });
+                });
+            }
+
+            section.classList.add('visible');
+            setupParroquiaEventListeners();
+        }
+
+        // Setup event listeners for the parish filter dropdown
+        function setupParroquiaEventListeners() {
+            const dropdown = document.getElementById('parroquiaDropdown');
+            const display = document.getElementById('parroquiaDisplay');
+            if (!dropdown || !display) return;
+
+            const allCheck = dropdown.querySelector('#all-parroquias');
+            if (!allCheck) return;
+
+            // Clone display to remove old listeners
+            const newDisplay = display.cloneNode(true);
+            display.parentNode.replaceChild(newDisplay, display);
+
+            newDisplay.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('open');
+                newDisplay.classList.toggle('open');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#parroquiaFilterSection')) {
+                    dropdown.classList.remove('open');
+                    newDisplay.classList.remove('open');
+                }
+            }, { once: false });
+
+            allCheck.addEventListener('change', () => {
+                const allBoxes = dropdown.querySelectorAll('input[type="checkbox"]:not(#all-parroquias)');
+                allBoxes.forEach(cb => { cb.checked = allCheck.checked; });
+                updateParroquiaDisplay();
+                applyFilters();
+                zoomToSelectedParroquias();
+            });
+
+            dropdown.addEventListener('change', (e) => {
+                if (e.target.classList.contains('parroquia-checkbox')) {
+                    const allBoxes = dropdown.querySelectorAll('input[type="checkbox"]:not(#all-parroquias)');
+                    const checkedBoxes = dropdown.querySelectorAll('input[type="checkbox"]:not(#all-parroquias):checked');
+                    if (checkedBoxes.length === 0) {
+                        allCheck.checked = false;
+                        allCheck.indeterminate = false;
+                    } else if (checkedBoxes.length === allBoxes.length) {
+                        allCheck.checked = true;
+                        allCheck.indeterminate = false;
+                    } else {
+                        allCheck.checked = false;
+                        allCheck.indeterminate = true;
+                    }
+                    updateParroquiaDisplay();
+                    applyFilters();
+                    zoomToSelectedParroquias();
+                }
+            });
+        }
+
+        // Update the parish display text
+        function updateParroquiaDisplay() {
+            const display = document.getElementById('parroquiaDisplay');
+            if (!display) return;
+            const span = display.querySelector('span');
+            const allCheck = document.getElementById('all-parroquias');
+            const checked = document.querySelectorAll('#parroquiaDropdown input[type="checkbox"]:not(#all-parroquias):checked');
+            if (!allCheck || allCheck.checked || checked.length === 0) {
+                if (span) span.textContent = 'Todas las Parroquias';
+            } else {
+                if (span) span.textContent = checked.length === 1
+                    ? checked[0].value
+                    : `${checked.length} parroquias seleccionadas`;
+            }
+        }
+
+        // Get currently selected parishes from the filter
+        function getSelectedParroquias() {
+            const allCheck = document.getElementById('all-parroquias');
+            if (!allCheck || allCheck.checked) return [];
+            const checks = document.querySelectorAll('#parroquiaDropdown input[type="checkbox"]:not(#all-parroquias):checked');
+            return Array.from(checks).map(cb => cb.value);
+        }
+
+        // Zoom map to selected parishes
+        function zoomToSelectedParroquias() {
+            const parroquias = getSelectedParroquias();
+            if (parroquias.length === 0) return;
+
+            const selectedMunicipios = getSelectedMunicipalities();
+            if (selectedMunicipios.length !== 1) return;
+
+            const allData = getParroquiasForMunicipio(selectedMunicipios[0], currentState);
+            const coords = allData
+                .filter(p => parroquias.includes(p.name))
+                .map(p => [p.lat, p.lon])
+                .filter(c => c[0] !== 0 && c[1] !== 0);
+
+            if (coords.length === 1) {
+                map.setView(coords[0], 13);
+            } else if (coords.length > 1) {
+                map.fitBounds(L.latLngBounds(coords), { padding: [30, 30] });
+            }
+        }
+
+        // Update the form's parish field based on selected municipality and state
+        function updateFormParroquias(municipio, estado) {
+            const container = document.getElementById('formParroquiasContainer');
+            const hint = document.getElementById('formParroquiasHint');
+            if (!container) return;
+
+            const parroquias = getParroquiasForMunicipio(municipio, estado);
+
+            if (parroquias.length === 0) {
+                container.innerHTML = `<input type="text" id="formParroquias" class="form-parroquia-fallback"
+                    placeholder="Una sola parroquia por registro">`;
+                if (hint) hint.textContent = '⚠ Cada registro corresponde a UNA parroquia.';
+                return;
+            }
+
+            // Build single-select (radio) list
+            const uid = Date.now(); // unique name per rebuild
+            let html = `<div class="form-parroquia-multi" id="formParroquiasMulti" style="max-height:200px;">`;
+            // "Cobertura Municipal" first
+            html += `<label class="parroquia-option" style="border-bottom:1px solid #dde; margin-bottom:4px; padding-bottom:4px;">
+                <input type="radio" name="parroquia_sel_${uid}" class="form-parroquia-radio" value="Cobertura Municipal">
+                <span style="font-style:italic; color:#666;">Cobertura Municipal (todo el municipio)</span>
+            </label>`;
+            parroquias.forEach(p => {
+                html += `<label class="parroquia-option">
+                    <input type="radio" name="parroquia_sel_${uid}" class="form-parroquia-radio" value="${p.name}">
+                    ${p.name}
+                </label>`;
+            });
+            html += `</div><input type="hidden" id="formParroquias" value="">`;
+            container.innerHTML = html;
+
+            if (hint) hint.textContent = `📌 Seleccione UNA parroquia. Para múltiples, cree un registro por parroquia.`;
+
+            // Sync hidden input on radio change
+            const multi = container.querySelector('#formParroquiasMulti');
+            if (multi) {
+                multi.addEventListener('change', () => {
+                    const sel = container.querySelector('.form-parroquia-radio:checked');
+                    const hidden = document.getElementById('formParroquias');
+                    if (hidden) hidden.value = sel ? sel.value : '';
+                });
+            }
+        }
+
+        // Initialize sector multi-select in the form
+        function initFormSectores() {
+            const container = document.getElementById('formSectoresContainer');
+            if (!container) return;
+            container.innerHTML = humanitarianSectors.map(s => `
+                <label class="parroquia-option">
+                    <input type="checkbox" class="form-sector-check" value="${s.name}">
+                    <span><strong>${s.shortName}</strong> — ${s.name}</span>
+                </label>
+            `).join('');
+            // Remove previous listener by replacing the element
+            const newContainer = container.cloneNode(true);
+            container.parentNode.replaceChild(newContainer, container);
+            newContainer.addEventListener('change', () => {
+                const vals = Array.from(newContainer.querySelectorAll('.form-sector-check:checked'))
+                                  .map(cb => cb.value);
+                const areaInput = document.getElementById('formArea');
+                const sectorInput = document.getElementById('formSector');
+                if (areaInput) areaInput.value = vals.join('; ');
+                if (sectorInput) sectorInput.value = vals[0] || '';
+            });
+        }
+
+        // Export Excel template for partner data collection (with Listas sheet)
+        function exportExcelTemplate() {
+            // Plantilla con filtros en cascada: Estado → Municipio → Parroquia
+            // Generada con generar_plantilla.py + Admin Maestro.xlsx (342 parroquias)
+            const b64 = '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';
+            const bin = atob(b64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'plantilla_proyectos_ocha.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         // Function to update municipality list based on state
         function updateMunicipalityList() {
             const municipiosContainer = document.getElementById('municipioDropdown');
@@ -2195,6 +3047,11 @@ function getMapZoom() {
             });
 
             console.log('✓ Municipality list updated with', municipalities.length, 'municipalities');
+
+            // Reset parish filter when municipality list changes (state change)
+            const parSection = document.getElementById('parroquiaFilterSection');
+            if (parSection) parSection.classList.remove('visible');
+            currentFilters.parroquia = [];
 
             // Reinitialize event listeners after DOM is updated
             setTimeout(() => {
@@ -2233,6 +3090,7 @@ function getMapZoom() {
                 updateMunicipioDisplay();
                 applyFilters();
                 zoomToSelectedMunicipalities();
+                updateParroquiaFilter();
             });
 
             // Handle individual municipality checkboxes - event delegation via dropdown container
@@ -2256,6 +3114,7 @@ function getMapZoom() {
                     updateMunicipioDisplay();
                     applyFilters();
                     zoomToSelectedMunicipalities();
+                    updateParroquiaFilter();
                 }
             });
 
@@ -2675,10 +3534,20 @@ function getMapZoom() {
                 dateStart.value = '';
                 dateEnd.value = '';
                 currentFilters = {
-                    org: '', municipio: [], estatus: '', search: '', 
-                    sector: '', dateStart: '', dateEnd: ''
+                    org: '', municipio: [], estatus: '', search: '',
+                    sector: '', dateStart: '', dateEnd: '', parroquia: []
                 };
-                document.querySelectorAll('.sector-item.active').forEach(item => 
+                // Reset parish filter
+                const parSection = document.getElementById('parroquiaFilterSection');
+                if (parSection) parSection.classList.remove('visible');
+                const allParroquias = document.getElementById('all-parroquias');
+                if (allParroquias) {
+                    allParroquias.checked = true;
+                    allParroquias.indeterminate = false;
+                    document.querySelectorAll('#parroquiaDropdown input[type="checkbox"]:not(#all-parroquias)')
+                        .forEach(cb => { cb.checked = true; });
+                }
+                document.querySelectorAll('.sector-item.active').forEach(item =>
                     item.classList.remove('active')
                 );
                 applyFilters();
@@ -2687,7 +3556,23 @@ function getMapZoom() {
 
             // Export functionality (only filtered exports since header buttons were removed)
             document.getElementById('exportFilteredExcel').addEventListener('click', () => exportToExcel(filteredData, 'proyectos_filtrados'));
-            document.getElementById('exportFilteredPdf').addEventListener('click', () => exportToPDF(filteredData, 'proyectos_filtrados'));
+            // PDF dropdown toggle
+            const pdfToggleBtn = document.getElementById('exportPdfToggle');
+            const pdfMenu = document.getElementById('pdfDropdownMenu');
+            pdfToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = pdfMenu.style.display !== 'none';
+                pdfMenu.style.display = isOpen ? 'none' : 'block';
+            });
+            document.addEventListener('click', () => { pdfMenu.style.display = 'none'; });
+            document.getElementById('exportPdfShort').addEventListener('click', () => {
+                pdfMenu.style.display = 'none';
+                exportToPDF(filteredData, 'proyectos_municipios', 'short');
+            });
+            document.getElementById('exportPdfFull').addEventListener('click', () => {
+                pdfMenu.style.display = 'none';
+                exportToPDF(filteredData, 'proyectos_parroquias', 'full');
+            });
 
             // Modal close
             modalClose.addEventListener('click', () => modal.classList.remove('active'));
@@ -2745,6 +3630,16 @@ function getMapZoom() {
                     if (!hasMatch) {
                         return false;
                     }
+                }
+
+                // Parish filter - substring match on semicolon-separated Parroquias field
+                currentFilters.parroquia = getSelectedParroquias();
+                if (currentFilters.parroquia && currentFilters.parroquia.length > 0) {
+                    const parroquiaText = (project['Parroquias'] || '').toLowerCase();
+                    const hasParroquia = currentFilters.parroquia.some(p =>
+                        parroquiaText.includes(p.toLowerCase())
+                    );
+                    if (!hasParroquia) return false;
                 }
 
                 // Status filter
@@ -3054,11 +3949,20 @@ function getMapZoom() {
             filteredData.forEach(p => {
                 const municipio = p['Municipio'];
                 if (municipio && municipio !== 'N/A' && municipio.trim() !== '' && municipio !== 'No especificado') {
-                    // For already expanded data, just add the municipality
                     filteredMunicipalities.add(municipio);
                 }
             });
             const totalMunicipalities = filteredMunicipalities.size;
+
+            // Calculate unique parishes from filtered data
+            const filteredParroquias = new Set();
+            filteredData.forEach(p => {
+                const parroquia = (p['Parroquias'] || '').trim();
+                if (parroquia && parroquia !== 'Cobertura Municipal' && parroquia.toLowerCase() !== 'nan') {
+                    filteredParroquias.add(parroquia);
+                }
+            });
+            const totalParroquias = filteredParroquias.size;
 
             // Calculate implementing organizations from filtered unique projects with normalization
             const filteredImplementingOrgs = new Set();
@@ -3100,6 +4004,11 @@ function getMapZoom() {
                     <div class="kpi-label">Municipios</div>
                 </div>
                 <div class="kpi-card">
+                    <i class="fas fa-map-pin kpi-icon"></i>
+                    <div class="kpi-value">${totalParroquias}</div>
+                    <div class="kpi-label">Parroquias</div>
+                </div>
+                <div class="kpi-card">
                     <i class="fas fa-handshake kpi-icon"></i>
                     <div class="kpi-value">${totalImplementingOrgs}</div>
                     <div class="kpi-label">Org. Implementadoras</div>
@@ -3120,7 +4029,8 @@ function getMapZoom() {
                 { key: 'select', text: '', type: 'checkbox' },
                 { key: 'org', text: 'Organización Líder', type: 'text' }, 
                 { key: 'project', text: 'Nombre del proyecto', type: 'text' }, 
-                { key: 'municipality', text: 'Municipio', type: 'text' }, 
+                { key: 'municipality', text: 'Municipio', type: 'text' },
+                { key: 'parroquia', text: 'Parroquia', type: 'text' },
                 { key: 'status', text: 'Estatus', type: 'text' },
                 { key: 'startDate', text: 'Fecha Inicio', type: 'text' },
                 { key: 'endDate', text: 'Fecha Fin', type: 'text' },
@@ -3193,20 +4103,18 @@ function getMapZoom() {
                 nameCell.style.maxWidth = '300px';
                 nameCell.title = project['Nombre del proyecto'] || 'N/A';
                 
-                // Municipality - show matched municipalities or original, properly normalized
+                // Municipality — single value from the record (no concatenation)
                 const munCell = row.insertCell();
-                let displayMunicipalities;
-                if (project._matchedMunicipalities && project._matchedMunicipalities.length > 0) {
-                    // Use matched municipalities from filter
-                    displayMunicipalities = [...new Set(project._matchedMunicipalities)].join('; ');
-                } else {
-                    // Extract and normalize from original data
-                    const municipalities = extractAndNormalizeMunicipalities(project['Municipio']);
-                    displayMunicipalities = municipalities.length > 0 ? municipalities.join('; ') : 'N/A';
-                }
+                const displayMunicipalities = project['Municipio'] || 'N/A';
                 munCell.textContent = displayMunicipalities;
-                munCell.title = displayMunicipalities; // Add tooltip for long names
-                
+                munCell.title = displayMunicipalities;
+
+                // Parroquia
+                const parroquiaCell = row.insertCell();
+                const parroquiaVal = project['Parroquias'] || '';
+                parroquiaCell.textContent = parroquiaVal || '—';
+                if (parroquiaVal) parroquiaCell.title = parroquiaVal;
+
                 // Status
                 const statusCell = row.insertCell();
                 const status = normalizeStatus(project['Estatus']) || 'N/A';
@@ -3343,6 +4251,10 @@ function getMapZoom() {
                         aValue = (a['Municipio'] || '').toLowerCase();
                         bValue = (b['Municipio'] || '').toLowerCase();
                         break;
+                    case 'parroquia':
+                        aValue = (a['Parroquias'] || '').toLowerCase();
+                        bValue = (b['Parroquias'] || '').toLowerCase();
+                        break;
                     case 'status':
                         aValue = normalizeStatus(a['Estatus']).toLowerCase();
                         bValue = normalizeStatus(b['Estatus']).toLowerCase();
@@ -3475,123 +4387,134 @@ function getMapZoom() {
         `;
         document.head.appendChild(toastStyle);
 
+        // Get GPS coordinates for a parish within a municipality
+        // Returns [lat, lon] or null if not found
+        function getParroquiaCoords(municipio, parroquia) {
+            if (!parroquia || parroquia.trim() === '' || parroquia === 'Cobertura Municipal') return null;
+            const normalize = s => s.toLowerCase()
+                .normalize('NFD').replace(/\p{M}/gu, '')
+                .replace(/[^a-z0-9\s]/g, '').trim();
+            const normParroquia = normalize(parroquia);
+
+            for (const st of ['Zulia', 'Falcón', 'Lara', 'Trujillo']) {
+                const pList = PARROQUIAS_DATA[st]?.[municipio];
+                if (pList) {
+                    const match = pList.find(p => {
+                        const normP = normalize(p.name);
+                        return normP === normParroquia
+                            || normP.includes(normParroquia)
+                            || normParroquia.includes(normP);
+                    });
+                    if (match) return [match.lat, match.lon];
+                }
+            }
+            return null;
+        }
+
         function updateMapMarkers() {
             // Clear existing markers
             markers.forEach(marker => map.removeLayer(marker));
             markers = [];
 
-            // Group projects by municipality using expanded data (each row already has single municipality)
-            const projectsByMunicipality = {};
-            const uniqueProjectIndices = new Set();
-            
-            console.log('UpdateMapMarkers: filteredData length:', filteredData.length);
-            
+            const activeCoords = getActiveCoordinates();
+
+            // Group by GPS coordinates: one entry per unique location
+            // Key: "lat,lon" — handles multiple projects at same parish GPS point
+            const byCoords = {};
+
             filteredData.forEach(expandedProject => {
                 const municipio = expandedProject['Municipio'];
+                const parroquia = (expandedProject['Parroquias'] || '').trim();
                 const originalIndex = expandedProject._originalIndex;
-                
-                console.log('Processing municipality:', municipio, 'originalIndex:', originalIndex);
-                
-                if (municipio && originalIndex !== undefined) {
-                    if (!projectsByMunicipality[municipio]) {
-                        projectsByMunicipality[municipio] = new Set();
-                    }
-                    // Use original project data but track which municipalities are represented
-                    projectsByMunicipality[municipio].add(originalIndex);
-                    uniqueProjectIndices.add(originalIndex);
-                }
-            });
-            
-            console.log('Municipalities found:', Object.keys(projectsByMunicipality));
-            console.log('Total unique municipalities:', Object.keys(projectsByMunicipality).length);
-            
-            // Convert sets to arrays with original project data
-            Object.keys(projectsByMunicipality).forEach(municipio => {
-                projectsByMunicipality[municipio] = Array.from(projectsByMunicipality[municipio])
-                    .map(index => projectsData[index]);
-            });
+                if (!municipio || originalIndex === undefined) return;
 
-            // Add markers for filtered projects with proportional sizing
-            const activeCoords = getActiveCoordinates();
-            Object.keys(projectsByMunicipality).forEach(municipio => {
-                const coords = activeCoords[municipio];
-                const projectsInMunicipio = projectsByMunicipality[municipio];
-
-                // Debug missing coordinates
+                const parroquiaCoords = getParroquiaCoords(municipio, parroquia);
+                const coords = parroquiaCoords || activeCoords[municipio];
                 if (!coords) {
-                    console.warn(`Missing coordinates for municipality: "${municipio}"`);
+                    console.warn(`No coordinates for: "${municipio}" / "${parroquia}"`);
+                    return;
                 }
-                
-                if (coords && projectsInMunicipio.length > 0) {
-                    // Calculate marker size based on number of projects (min 6, max 20)
-                    const markerSize = Math.min(Math.max(6 + projectsInMunicipio.length * 2, 6), 20);
-                    
-                    // Determine primary status (most common)
-                    const statusCounts = {};
-                    projectsInMunicipio.forEach(p => {
-                        const status = p['Estatus'] || 'N/A';
-                        statusCounts[status] = (statusCounts[status] || 0) + 1;
-                    });
-                    const primaryStatus = Object.keys(statusCounts).reduce((a, b) => 
-                        statusCounts[a] > statusCounts[b] ? a : b
-                    );
 
-                    let color = '#005a8a'; // Default blue
-                    // Use normalized status for consistent coloring
-                    const normalizedPrimaryStatus = normalizeStatus(primaryStatus);
-                    switch (normalizedPrimaryStatus.toLowerCase()) {
-                        case 'en ejecución':
-                        case 'en ejecucion':
-                            color = '#007DBC'; // OCHA Blue
-                            break;
-                        case 'en proyecto':
-                            color = '#ECA154'; // OCHA Orange
-                            break;
-                        case 'terminado':
-                            color = '#7DBA00'; // OCHA Green
-                            break;
-                        default:
-                            color = '#5A5A5A'; // OCHA Gray for unknown status
-                            break;
-                    }
+                const key = coords[0].toFixed(5) + ',' + coords[1].toFixed(5);
+                if (!byCoords[key]) {
+                    byCoords[key] = {
+                        coords,
+                        projects: [],
+                        seenIndices: new Set(),
+                        parroquia,
+                        municipio,
+                        isParroquia: !!parroquiaCoords
+                    };
+                }
 
-                    const marker = L.circleMarker(coords, {
-                        radius: markerSize,
-                        fillColor: color,
-                        color: '#fff',
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.8
-                    }).addTo(map);
+                // Avoid duplicating the same original project record
+                if (!byCoords[key].seenIndices.has(originalIndex)) {
+                    byCoords[key].seenIndices.add(originalIndex);
+                    byCoords[key].projects.push({ ...projectsData[originalIndex], _idx: originalIndex });
+                }
+            });
 
-                    // Create popup content with project summary
-                    const organizations = [...new Set(projectsInMunicipio.map(p => p['Organización Líder']))];
-                    const sectors = [...new Set(projectsInMunicipio.map(p => p['Área de intervención complementaria']))];
-                    
-                    const popupContent = `
-                        <div style="max-width: 300px;">
-                            <h4 style="color: var(--ocha-blue); margin-bottom: 0.5rem;">${municipio}</h4>
-                            <p><strong>Proyectos:</strong> ${projectsInMunicipio.length}</p>
-                            <p><strong>Organizaciones:</strong> ${organizations.length}</p>
-                            <p><strong>Sectores:</strong> ${sectors.length}</p>
-                            <p><strong>Estatus Principal:</strong> <span class="status-${normalizeStatus(primaryStatus).toLowerCase().replace(/\s+/g, '-')}">${normalizeStatus(primaryStatus)}</span></p>
-                            ${projectsInMunicipio.slice(0, 3).map((p, idx) => `
-                                <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px; font-size: 0.85rem;">
-                                    <span style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <i class="fas fa-circle" style="font-size: 0.6rem; color: ${getStatusColor(p['Estatus'])};"></i>
-                                        <strong>${p['Nombre del proyecto'] || 'Sin nombre'}</strong>
-                                    </span>
-                                    <small>${p['Organización Líder'] || 'N/A'}</small>
-                                    <button class="btn btn-primary btn-sm" style="margin-top: 0.5rem; font-size: 0.7rem; padding: 0.2rem 0.5rem;" onclick="showProjectDetails(${projectsData.indexOf(p)})">Ver Detalles</button>
+            Object.values(byCoords).forEach(({ coords, projects, parroquia, municipio, isParroquia }) => {
+                if (projects.length === 0) return;
+
+                const markerSize = Math.min(Math.max(6 + projects.length * 2, 6), 20);
+
+                // Determine primary status (most common)
+                const statusCounts = {};
+                projects.forEach(p => {
+                    const st = p['Estatus'] || 'N/A';
+                    statusCounts[st] = (statusCounts[st] || 0) + 1;
+                });
+                const primaryStatus = Object.keys(statusCounts).reduce((a, b) =>
+                    statusCounts[a] > statusCounts[b] ? a : b);
+
+                let color = '#005a8a';
+                const normalizedStatus = normalizeStatus(primaryStatus);
+                switch (normalizedStatus.toLowerCase()) {
+                    case 'en ejecución': case 'en ejecucion': color = '#007DBC'; break;
+                    case 'en proyecto':  color = '#ECA154'; break;
+                    case 'terminado':    color = '#7DBA00'; break;
+                    default:             color = '#5A5A5A'; break;
+                }
+
+                const marker = L.circleMarker(coords, {
+                    radius: markerSize,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: isParroquia ? 2 : 1.5,
+                    opacity: 1,
+                    fillOpacity: isParroquia ? 0.85 : 0.65
+                }).addTo(map);
+
+                const locationLabel = (isParroquia && parroquia && parroquia !== 'Cobertura Municipal')
+                    ? `${parroquia} <span style="font-weight:400;font-size:0.85em;">· ${municipio}</span>`
+                    : municipio;
+
+                const organizations = [...new Set(projects.map(p => p['Organización Líder']))];
+
+                const popupContent = `
+                    <div style="max-width: 300px;">
+                        <h4 style="color: var(--ocha-blue); margin-bottom: 0.25rem;">${locationLabel}</h4>
+                        <p style="margin: 0 0 0.5rem; font-size: 0.78rem; color: #888;">
+                            ${isParroquia ? '📍 Parroquia' : '🏛 Municipio (sin coord. de parroquia)'}
+                        </p>
+                        <p style="margin: 0 0 0.4rem;"><strong>Proyectos:</strong> ${projects.length} &nbsp;|&nbsp; <strong>Orgs:</strong> ${organizations.length}</p>
+                        ${projects.slice(0, 3).map(p => `
+                            <div style="margin-top: 0.4rem; padding: 0.4rem 0.5rem; background: #f8f9fa; border-radius: 4px; font-size: 0.82rem;">
+                                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <i class="fas fa-circle" style="font-size: 0.55rem; color: ${getStatusColor(p['Estatus'])};"></i>
+                                    <strong>${p['Nombre del proyecto'] || 'Sin nombre'}</strong>
                                 </div>
-                            `).join('')}
-                            ${projectsInMunicipio.length > 3 ? `<p style="margin-top: 0.5rem; font-size: 0.85rem; font-style: italic;">y ${projectsInMunicipio.length - 3} más...</p>` : ''}
-                        </div>
-                    `;
+                                <div style="color:#666;">${p['Organización Líder'] || 'N/A'}</div>
+                                <button class="btn btn-primary btn-sm" style="margin-top: 0.3rem; font-size: 0.7rem; padding: 0.2rem 0.4rem;" onclick="showProjectDetails(${p._idx})">Ver Detalles</button>
+                            </div>
+                        `).join('')}
+                        ${projects.length > 3 ? `<p style="margin-top: 0.4rem; font-size: 0.8rem; font-style: italic;">y ${projects.length - 3} más...</p>` : ''}
+                    </div>
+                `;
 
-                    marker.bindPopup(popupContent);
-                    markers.push(marker);
-                }
+                marker.bindPopup(popupContent);
+                markers.push(marker);
             });
         }
 
@@ -3772,7 +4695,7 @@ function getMapZoom() {
                 <div class="modal-field-group">
                     <div class="modal-field">
                         <strong><i class="fas fa-map-marker-alt text-ocha"></i> Municipio</strong>
-                        <span>${extractAndNormalizeMunicipalities(project['Municipio']).join(', ') || 'No especificado'}</span>
+                        <span>${project['Municipio'] || 'No especificado'}</span>
                     </div>
                     <div class="modal-field">
                         <strong><i class="fas fa-map-pin text-ocha"></i> Parroquias</strong>
@@ -3825,22 +4748,19 @@ function getMapZoom() {
                                                  p['Organización Líder'] === project['Organización Líder'])
                 );
 
-            // Prepare data for export with normalized names
-            const exportData = uniqueData.map(project => {
-                const municipalities = extractAndNormalizeMunicipalities(project['Municipio']);
-                return {
-                    'Organización Líder': normalizeOrganizationName(project['Organización Líder']) || '',
-                    'Organización Implementadora': normalizeOrganizationName(project['Organización implementadora']) || '',
-                    'Nombre del Proyecto': project['Nombre del proyecto'] || '',
-                    'Área de Intervención': project['Área de intervención complementaria'] || '',
-                    'Actividad': project['Actividad'] || '',
-                    'Municipio': municipalities.join(', ') || '',
-                    'Parroquias': project['Parroquias'] || '',
-                    'Estatus': normalizeStatus(project['Estatus']) || '',
-                    'Fecha de Inicio': project['Fecha de Inicio'] || '',
-                    'Fecha de Finalización': project['Fecha Prevista de Finalización'] || ''
-                };
-            });
+            // Prepare data for export — each record has a single municipality and parish
+            const exportData = uniqueData.map(project => ({
+                'Organización Líder': normalizeOrganizationName(project['Organización Líder']) || '',
+                'Organización Implementadora': normalizeOrganizationName(project['Organización implementadora']) || '',
+                'Nombre del Proyecto': project['Nombre del proyecto'] || '',
+                'Área de Intervención': project['Área de intervención complementaria'] || '',
+                'Actividad': project['Actividad'] || '',
+                'Municipio': project['Municipio'] || '',
+                'Parroquia': project['Parroquias'] || '',
+                'Estatus': normalizeStatus(project['Estatus']) || '',
+                'Fecha de Inicio': project['Fecha de Inicio'] || '',
+                'Fecha de Finalización': project['Fecha Prevista de Finalización'] || ''
+            }));
 
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
@@ -3851,131 +4771,175 @@ function getMapZoom() {
             XLSX.writeFile(wb, `${filename}_${timestamp}.xlsx`);
         }
 
-        function exportToPDF(data, filename) {
+        // mode: 'short' = agrupado por municipio (parroquias en una celda)
+        //       'full'  = un registro por parroquia
+        function exportToPDF(data, filename, mode) {
+            mode = mode || 'short';
             if (data.length === 0) {
                 alert('No hay datos para exportar');
                 return;
             }
 
+            // ── Build table rows based on mode ──────────────────────────────
+            // Helper: sector abbreviations for a project
+            function getSectorText(project) {
+                const area = project['Área de intervención complementaria'] || '';
+                const matched = humanitarianSectors
+                    .filter(s => s.keywords.some(k => area.toLowerCase().includes(k.toLowerCase())))
+                    .map(s => s.shortName);
+                return matched.length > 0 ? matched.join(', ') : (area ? area.substring(0, 20) : 'N/A');
+            }
+
+            function fmtDate(d) {
+                if (!d) return '';
+                try { return new Date(d).toLocaleDateString('es-ES'); } catch(e) { return d; }
+            }
+
+            let tableRows = [];
+            let tableHead = [];
+
+            if (mode === 'full') {
+                // ── FULL MODE: one row per parish record ───────────────────
+                tableHead = [['Sectores', 'Org. Líder', 'Org. Impl.', 'Proyecto', 'Municipio', 'Parroquia', 'Estatus', 'F. Inicio', 'F. Fin']];
+
+                const seen = new Set();
+                data.forEach(ep => {
+                    const idx = ep._originalIndex;
+                    if (idx === undefined) return;
+                    const p = projectsData[idx];
+                    if (seen.has(idx)) return;
+                    seen.add(idx);
+
+                    tableRows.push([
+                        getSectorText(p),
+                        normalizeOrganizationName(p['Organización Líder']) || '',
+                        normalizeOrganizationName(p['Organización implementadora']) || '—',
+                        p['Nombre del proyecto'] || '',
+                        p['Municipio'] || '',
+                        (p['Parroquias'] || '').trim() || '—',
+                        normalizeStatus(p['Estatus']) || '',
+                        fmtDate(p['Fecha de Inicio']),
+                        fmtDate(p['Fecha Prevista de Finalización'])
+                    ]);
+                });
+            } else {
+                // ── SHORT MODE: group by (Código + Municipio), list parishes ─
+                tableHead = [['Sectores', 'Org. Líder', 'Org. Impl.', 'Proyecto', 'Municipio', 'Parroquias', 'Estatus', 'F. Inicio', 'F. Fin']];
+
+                const groups = new Map();
+                data.forEach(ep => {
+                    const idx = ep._originalIndex;
+                    if (idx === undefined) return;
+                    const p = projectsData[idx];
+                    const key = (p['Código del proyecto'] || '') + '||' + (p['Municipio'] || '');
+                    if (!groups.has(key)) {
+                        groups.set(key, { base: p, parishes: [] });
+                    }
+                    const parroquia = (p['Parroquias'] || '').trim();
+                    if (parroquia && parroquia !== '—' && !groups.get(key).parishes.includes(parroquia)) {
+                        groups.get(key).parishes.push(parroquia);
+                    }
+                });
+
+                groups.forEach(({ base, parishes }) => {
+                    const parroquiasText = parishes.length > 0
+                        ? parishes.join(', ')
+                        : (base['Parroquias'] || '—');
+                    tableRows.push([
+                        getSectorText(base),
+                        normalizeOrganizationName(base['Organización Líder']) || '',
+                        normalizeOrganizationName(base['Organización implementadora']) || '—',
+                        base['Nombre del proyecto'] || '',
+                        base['Municipio'] || '',
+                        parroquiasText,
+                        normalizeStatus(base['Estatus']) || '',
+                        fmtDate(base['Fecha de Inicio']),
+                        fmtDate(base['Fecha Prevista de Finalización'])
+                    ]);
+                });
+            }
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-            // Add header with dynamic state/filter info
+            const modeLabel = mode === 'full' ? 'Vista por Parroquias' : 'Vista por Municipios';
+
+            // ── PDF Header ──────────────────────────────────────────────────
             const stateNames = {
-                'Zulia': 'Zulia',
-                'Falcón': 'Falcón',
-                'Lara': 'Lara',
-                'Trujillo': 'Trujillo',
+                'Zulia': 'Zulia', 'Falcón': 'Falcón',
+                'Lara': 'Lara', 'Trujillo': 'Trujillo',
                 'Todos': 'Zulia, Falcón, Lara y Trujillo'
             };
             const selectedState = stateNames[currentState] || 'Zulia, Falcón, Lara y Trujillo';
             const municipios = getSelectedMunicipalities();
 
-            // Build title based on filters
-            let mainTitle = 'Registro de Proyectos Humanitarios ';
+            let mainTitle = 'Registro de Proyectos Humanitarios';
             if (municipios.length === 1) {
-                mainTitle += `- Municipio ${municipios[0]}`;
+                mainTitle += ` — Municipio ${municipios[0]}`;
             } else if (municipios.length > 1) {
-                mainTitle += `- ${municipios.length} Municipios Seleccionados`;
+                mainTitle += ` — ${municipios.length} Municipios`;
             } else {
-                mainTitle += `- ${selectedState}`;
+                mainTitle += ` — ${selectedState}`;
             }
 
-            doc.setFontSize(16);
-            doc.setTextColor(0, 93, 146); // OCHA Blue
-            doc.text(mainTitle, 15, 15);
+            doc.setFontSize(15);
+            doc.setTextColor(0, 93, 146);
+            doc.text(mainTitle, 15, 14);
 
-            doc.setFontSize(12);
-            doc.setTextColor(90, 90, 90); // OCHA Gray
-            doc.text('Sub Oficina OCHA Maracaibo', 15, 23);
+            // Mode label (right-aligned)
+            doc.setFontSize(8);
+            doc.setTextColor(mode === 'full' ? 0 : 80, mode === 'full' ? 120 : 80, mode === 'full' ? 0 : 80);
+            const pageW = doc.internal.pageSize.getWidth();
+            doc.text(modeLabel, pageW - 6, 14, { align: 'right' });
 
-            // Get unique projects from expanded data to avoid duplicates
-            const uniqueProjects = [];
-            const seenProjectIndices = new Set();
-            
-            data.forEach(expandedProject => {
-                const originalIndex = expandedProject._originalIndex;
-                if (originalIndex !== undefined && !seenProjectIndices.has(originalIndex)) {
-                    seenProjectIndices.add(originalIndex);
-                    uniqueProjects.push(projectsData[originalIndex]);
-                }
-            });
+            doc.setFontSize(10);
+            doc.setTextColor(90, 90, 90);
+            doc.text('Sub Oficina OCHA Maracaibo', 15, 21);
 
-            // If no expanded data available, use data directly but ensure unique projects
-            const uniqueData = uniqueProjects.length > 0 ? uniqueProjects : 
-                data.filter((project, index, self) => 
-                    index === self.findIndex(p => p['Nombre del proyecto'] === project['Nombre del proyecto'] && 
-                                                 p['Organización Líder'] === project['Organización Líder'])
-                );
-
-            // Add filters summary - improved formatting
+            // Filters summary
             const activeFilters = [];
             if (currentFilters.org) activeFilters.push(`Organización: ${currentFilters.org}`);
             if (currentFilters.municipio && currentFilters.municipio.length > 0) {
-                if (currentFilters.municipio.length === 1) {
-                    activeFilters.push(`Municipio: ${currentFilters.municipio[0]}`);
-                } else {
-                    activeFilters.push(`Municipios (${currentFilters.municipio.length}): ${currentFilters.municipio.join(', ')}`);
-                }
+                activeFilters.push(currentFilters.municipio.length === 1
+                    ? `Municipio: ${currentFilters.municipio[0]}`
+                    : `Municipios (${currentFilters.municipio.length}): ${currentFilters.municipio.join(', ')}`);
+            }
+            if (currentFilters.parroquia && currentFilters.parroquia.length > 0) {
+                activeFilters.push(`Parroquias: ${currentFilters.parroquia.join(', ')}`);
             }
             if (currentFilters.estatus) activeFilters.push(`Estatus: ${currentFilters.estatus}`);
             if (currentFilters.dateStart || currentFilters.dateEnd) {
-                activeFilters.push(`Período: ${currentFilters.dateStart || 'N/A'} - ${currentFilters.dateEnd || 'N/A'}`);
+                activeFilters.push(`Período: ${currentFilters.dateStart || 'N/A'} — ${currentFilters.dateEnd || 'N/A'}`);
             }
 
+            let headerEndY = 24;
             if (activeFilters.length > 0) {
-                doc.setFontSize(9);
+                doc.setFontSize(8);
                 doc.setTextColor(100, 100, 100);
-                let yPos = 28;
-                activeFilters.forEach((filter, index) => {
-                    doc.text(`• ${filter}`, 15, yPos);
-                    yPos += 4;
-                });
-                // Reset color for table
+                let yPos = 27;
+                activeFilters.forEach(f => { doc.text(`• ${f}`, 15, yPos); yPos += 4; });
+                headerEndY = yPos;
                 doc.setTextColor(0, 0, 0);
             }
 
-            // Prepare table data with normalized municipality names and sectors
-            const tableData = uniqueData.map(project => {
-                const municipalities = extractAndNormalizeMunicipalities(project['Municipio']);
+            // Record count
+            doc.setFontSize(7.5);
+            doc.setTextColor(60, 60, 60);
+            doc.text(`Total registros: ${tableRows.length}`, 15, headerEndY + 3);
 
-                // Extract sector short names from intervention area
-                const area = project['Área de intervención complementaria'] || '';
-                const matchedSectors = [];
-                for (const sector of humanitarianSectors) {
-                    if (sector.keywords.some(keyword =>
-                        area.toLowerCase().includes(keyword.toLowerCase())
-                    )) {
-                        matchedSectors.push(sector.shortName);
-                    }
-                }
-                const sectorText = matchedSectors.length > 0 ? matchedSectors.join(', ') : 'N/A';
-
-                return [
-                    sectorText, // Sectores
-                    normalizeOrganizationName(project['Organización Líder']) || '',
-                    project['Nombre del proyecto'] || '',
-                    municipalities.join(', ') || '',
-                    normalizeStatus(project['Estatus']) || '',
-                    project['Fecha de Inicio'] ? new Date(project['Fecha de Inicio']).toLocaleDateString('es-ES') : '',
-                    project['Fecha Prevista de Finalización'] ? new Date(project['Fecha Prevista de Finalización']).toLocaleDateString('es-ES') : ''
-                ];
-            });
-
-            // Calculate optimal column widths for landscape A4
-            // Page width = 297mm, margins = 6mm each side = 285mm usable
+            // ── Column widths — 9 columns: Sectores|OrgLíder|OrgImpl|Proyecto|Municipio|Parroquia(s)|Estatus|F.Ini|F.Fin
             const pageWidth = doc.internal.pageSize.getWidth();
-            const usableWidth = pageWidth - 12; // 6mm margins on each side
-
-            // Column widths proportionally distributed across usable width
-            // Total ratio: 20 + 24 + 80 + 28 + 16 + 16 + 16 = 200 parts
-            const columnRatio = [20, 24, 80, 28, 16, 16, 16];
-            const columnWidths = columnRatio.map(ratio => (ratio / 200) * usableWidth);
+            const usableWidth = pageWidth - 12;
+            const columnRatio = mode === 'full'
+                ? [14, 18, 18, 48, 20, 24, 13, 12, 12]   // full: parroquia=24
+                : [14, 18, 18, 44, 20, 36, 13, 12, 12];   // short: parroquias=36 (lista)
+            const ratioSum = columnRatio.reduce((a, b) => a + b, 0);
+            const columnWidths = columnRatio.map(r => (r / ratioSum) * usableWidth);
 
             doc.autoTable({
-                head: [['Sectores', 'Organización', 'Proyecto', 'Municipio', 'Estatus', 'F. Inicio', 'F. Fin']],
-                body: tableData,
-                startY: activeFilters.length > 0 ? 45 : 33,
+                head: tableHead,
+                body: tableRows,
+                startY: headerEndY + 6,
                 styles: {
                     fontSize: 7,
                     cellPadding: 1.8,
@@ -3989,12 +4953,14 @@ function getMapZoom() {
                 },
                 columnStyles: {
                     0: { cellWidth: columnWidths[0], fontSize: 6.5, halign: 'center' }, // Sectores
-                    1: { cellWidth: columnWidths[1], fontStyle: 'bold', fontSize: 6.5 }, // Organización
-                    2: { cellWidth: columnWidths[2] }, // Proyecto - el más ancho
-                    3: { cellWidth: columnWidths[3] }, // Municipio
-                    4: { cellWidth: columnWidths[4], halign: 'center', fontSize: 6.5 }, // Estatus
-                    5: { cellWidth: columnWidths[5], halign: 'center', fontSize: 6 }, // Fecha Inicio
-                    6: { cellWidth: columnWidths[6], halign: 'center', fontSize: 6 }  // Fecha Fin
+                    1: { cellWidth: columnWidths[1], fontStyle: 'bold', fontSize: 6.5 }, // Org. Líder
+                    2: { cellWidth: columnWidths[2], fontSize: 6.5 },                   // Org. Impl.
+                    3: { cellWidth: columnWidths[3] },                                   // Proyecto
+                    4: { cellWidth: columnWidths[4] },                                   // Municipio
+                    5: { cellWidth: columnWidths[5], fontSize: 6.5 },                   // Parroquia/Parroquias
+                    6: { cellWidth: columnWidths[6], halign: 'center', fontSize: 6.5 }, // Estatus
+                    7: { cellWidth: columnWidths[7], halign: 'center', fontSize: 6 },   // Fecha Inicio
+                    8: { cellWidth: columnWidths[8], halign: 'center', fontSize: 6 }    // Fecha Fin
                 },
                 headStyles: {
                     fillColor: [0, 93, 146],
@@ -4085,6 +5051,8 @@ function getMapZoom() {
         // ========== NEW FUNCTIONALITY: ADD/EDIT PROJECTS AND IMPORT EXCEL ==========
 
         let editingProjectIndex = -1;
+        let editingOriginalCode = '';
+        let editingOriginalMunicipio = '';
         let importMode = null;
 
         // Function to update municipalities dropdown based on selected state
@@ -4124,11 +5092,19 @@ function getMapZoom() {
         // Setup event listener for state dropdown in form
         function setupFormStateListener() {
             const stateSelect = document.getElementById('formEstado');
+            const municipioSelect = document.getElementById('formMunicipio');
             if (stateSelect) {
                 stateSelect.addEventListener('change', (e) => {
                     updateMunicipalitiesInForm(e.target.value);
-                    // Reset municipality selection when state changes
-                    document.getElementById('formMunicipio').value = '';
+                    // Reset municipality and parish selection when state changes
+                    if (municipioSelect) municipioSelect.value = '';
+                    updateFormParroquias('', e.target.value);
+                });
+            }
+            if (municipioSelect) {
+                municipioSelect.addEventListener('change', (e) => {
+                    const estado = stateSelect ? stateSelect.value : '';
+                    updateFormParroquias(e.target.value, estado);
                 });
             }
         }
@@ -4136,6 +5112,8 @@ function getMapZoom() {
         // Function to open add project modal
         function openAddProjectModal() {
             editingProjectIndex = -1;
+            editingOriginalCode = '';
+            editingOriginalMunicipio = '';
             document.getElementById('editModalTitle').textContent = 'Agregar Proyecto';
             document.getElementById('projectForm').reset();
 
@@ -4144,7 +5122,13 @@ function getMapZoom() {
             stateSelect.value = 'Zulia';
             updateMunicipalitiesInForm('Zulia');
 
-            // Setup event listener for state changes
+            // Reset parish field to empty state
+            updateFormParroquias('', 'Zulia');
+
+            // Initialize sector multi-select (all unchecked)
+            initFormSectores();
+
+            // Setup event listener for state changes (includes municipio → parish update)
             setupFormStateListener();
 
             document.getElementById('editProjectModal').classList.add('active');
@@ -4161,13 +5145,27 @@ function getMapZoom() {
             editingProjectIndex = index;
             const project = projectsData[index];
 
+            // Store original key for delete-before-upsert on save
+            editingOriginalCode = project['Código del proyecto'] || '';
+            editingOriginalMunicipio = project['Municipio'] || '';
+
             document.getElementById('editModalTitle').textContent = 'Editar Proyecto';
             document.getElementById('formCodigo').value = project['Código del proyecto'] || '';
             document.getElementById('formNombre').value = project['Nombre del proyecto'] || '';
             document.getElementById('formOrgLider').value = project['Organización Líder'] || '';
             document.getElementById('formOrgImpl').value = project['Organización implementadora'] || '';
-            document.getElementById('formSector').value = project['Área de intervención complementaria'] || '';
-            document.getElementById('formArea').value = project['Área de intervención complementaria'] || '';
+
+            // Initialize sector multi-select and pre-check saved sectors
+            initFormSectores();
+            const savedArea = project['Área de intervención complementaria'] || '';
+            document.getElementById('formArea').value = savedArea;
+            document.getElementById('formSector').value = savedArea.split(';')[0].trim();
+            document.querySelectorAll('.form-sector-check').forEach(cb => {
+                const sector = humanitarianSectors.find(s => s.name === cb.value);
+                cb.checked = sector
+                    ? sector.keywords.some(k => savedArea.toLowerCase().includes(k.toLowerCase()))
+                    : savedArea.includes(cb.value);
+            });
 
             // Determine state from municipality
             const municipio = project['Municipio'] || '';
@@ -4181,13 +5179,40 @@ function getMapZoom() {
             // Set municipality value
             document.getElementById('formMunicipio').value = municipio;
 
-            document.getElementById('formParroquias').value = project['Parroquias'] || '';
+            // Populate parish multi-select for this municipality
+            const savedParroquias = project['Parroquias'] || '';
+            updateFormParroquias(municipio, state);
+            // Restore saved parish selection after the DOM is built (single-select radio)
+            setTimeout(() => {
+                const savedVal = savedParroquias.trim();
+                if (savedVal) {
+                    const container = document.getElementById('formParroquiasContainer');
+                    if (container) {
+                        const radios = container.querySelectorAll('.form-parroquia-radio');
+                        if (radios.length > 0) {
+                            // Try exact match first, then case-insensitive
+                            let matched = Array.from(radios).find(r => r.value === savedVal);
+                            if (!matched) matched = Array.from(radios).find(r =>
+                                r.value.toLowerCase() === savedVal.toLowerCase());
+                            if (matched) {
+                                matched.checked = true;
+                                const hidden = document.getElementById('formParroquias');
+                                if (hidden) hidden.value = matched.value;
+                            }
+                        } else {
+                            const textInput = document.getElementById('formParroquias');
+                            if (textInput) textInput.value = savedVal;
+                        }
+                    }
+                }
+            }, 50);
+
             document.getElementById('formEstatus').value = normalizeStatus(project['Estatus']) || '';
             document.getElementById('formFechaInicio').value = project['Fecha de Inicio'] || '';
             document.getElementById('formFechaFin').value = project['Fecha Prevista de Finalización'] || '';
             document.getElementById('formActividad').value = project['Actividad'] || '';
 
-            // Setup event listener for state changes
+            // Setup event listener for state changes (includes municipio → parish update)
             setupFormStateListener();
 
             document.getElementById('editProjectModal').classList.add('active');
@@ -4198,6 +5223,8 @@ function getMapZoom() {
             document.getElementById('editProjectModal').classList.remove('active');
             document.getElementById('projectForm').reset();
             editingProjectIndex = -1;
+            editingOriginalCode = '';
+            editingOriginalMunicipio = '';
         }
 
         // Variable to store the project index for deletion
@@ -4330,46 +5357,84 @@ function getMapZoom() {
             }
         }
 
-        // Function to handle form submission
-        document.getElementById('projectForm').addEventListener('submit', function(e) {
+        // Function to handle form submission (async — saves to Supabase, one record per parish)
+        document.getElementById('projectForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            // Combine sector and area for 'Área de intervención complementaria' field
-            const selectedSector = document.getElementById('formSector').value || '';
-            const additionalArea = document.getElementById('formArea').value.trim() || '';
-            const fullArea = selectedSector + (additionalArea ? '; ' + additionalArea : '');
+            // Validate Código del proyecto format (Supabase constraint: ^[A-Z0-9\-]{1,30}$)
+            const formCodigo = document.getElementById('formCodigo').value.trim();
+            const codigoPattern = /^[A-Z0-9\-]{1,30}$/;
+            if (formCodigo && !codigoPattern.test(formCodigo)) {
+                alert('El Código del proyecto debe contener solo MAYÚSCULAS, números y guiones (máx. 30 caracteres).\nEjemplo válido: ZUL-2025-001');
+                document.getElementById('formCodigo').focus();
+                return;
+            }
 
-            const projectData = {
-                'Código del proyecto': document.getElementById('formCodigo').value.trim(),
+            // Validate at least one sector is selected
+            const selectedSectors = Array.from(
+                document.querySelectorAll('.form-sector-check:checked')
+            ).map(cb => cb.value);
+            const fullArea = selectedSectors.length > 0
+                ? selectedSectors.join('; ')
+                : (document.getElementById('formArea').value.trim() || '');
+
+            const municipio = document.getElementById('formMunicipio').value.trim();
+            // Single parish value (radio button — one record per parish)
+            const parroquiaVal = document.getElementById('formParroquias').value.trim();
+
+            const recordsToSave = [{
+                'Código del proyecto': formCodigo,
                 'Nombre del proyecto': document.getElementById('formNombre').value.trim(),
                 'Organización Líder': document.getElementById('formOrgLider').value.trim(),
                 'Organización implementadora': document.getElementById('formOrgImpl').value.trim(),
-                'Área de intervención complementaria': fullArea.trim(),
+                'Área de intervención complementaria': fullArea,
                 'Estado': document.getElementById('formEstado').value,
-                'Municipio': document.getElementById('formMunicipio').value.trim(),
-                'Parroquias': document.getElementById('formParroquias').value.trim(),
+                'Municipio': municipio,
+                'Parroquias': parroquiaVal,
                 'Estatus': document.getElementById('formEstatus').value,
                 'Fecha de Inicio': document.getElementById('formFechaInicio').value,
                 'Fecha Prevista de Finalización': document.getElementById('formFechaFin').value,
                 'Actividad': document.getElementById('formActividad').value.trim()
-            };
+            }];
 
-            if (editingProjectIndex >= 0) {
-                // Edit existing project
-                projectsData[editingProjectIndex] = projectData;
-                alert('Proyecto actualizado exitosamente');
-            } else {
-                // Add new project
-                projectsData.push(projectData);
-                alert('Proyecto agregado exitosamente');
+            try {
+                // If editing: delete all previous records for this project+municipality
+                // (handles parish changes and municipality changes)
+                if (editingProjectIndex >= 0 && editingOriginalCode) {
+                    const { error: delError } = await supabaseClient
+                        .from('proyectos')
+                        .delete()
+                        .eq('Código del proyecto', editingOriginalCode)
+                        .eq('Municipio', editingOriginalMunicipio);
+                    if (delError) {
+                        console.warn('Delete old records warning:', delError.message);
+                    }
+                }
+
+                // Upsert new records (one per parish)
+                const saved = await insertProjectsToSupabase(recordsToSave);
+                if (saved) {
+                    const action = editingProjectIndex >= 0 ? 'actualizado' : 'guardado';
+                    alert(`✓ Proyecto ${action} exitosamente.`);
+                    await reloadDataFromSupabase();
+                } else {
+                    // Fallback: save only to local array
+                    if (editingProjectIndex >= 0) {
+                        projectsData[editingProjectIndex] = recordsToSave[0];
+                    } else {
+                        recordsToSave.forEach(r => projectsData.push(r));
+                    }
+                    expandedData = expandProjectData(projectsData);
+                    applyFilters();
+                    updateTable();
+                    updateMapMarkers();
+                    initializeCharts();
+                }
+            } catch (err) {
+                console.error('Form save error:', err);
+                alert('Error al guardar: ' + err.message);
             }
 
-            // Refresh data and update UI
-            expandedData = expandProjectData(projectsData);
-            applyFilters();
-            updateTable();
-            updateMapMarkers();
-            initializeCharts();
             closeEditModal();
         });
 
@@ -4444,6 +5509,21 @@ function getMapZoom() {
             e.target.value = '';
         });
 
+        // Expand rows that have multiple parishes separated by ";" into individual rows
+        function expandRowsByParroquia(rows) {
+            const expanded = [];
+            rows.forEach(row => {
+                const raw = (row['Parroquias'] || '').toString().trim();
+                const parts = raw.split(';').map(p => p.trim()).filter(Boolean);
+                if (parts.length <= 1) {
+                    expanded.push(row);
+                } else {
+                    parts.forEach(p => expanded.push({ ...row, 'Parroquias': p }));
+                }
+            });
+            return expanded;
+        }
+
         // Function to process Excel file
         document.getElementById('excelFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -4472,33 +5552,28 @@ function getMapZoom() {
                         return;
                     }
 
-                    // Insert to Supabase
-                    const inserted = await insertProjectsToSupabase(jsonData);
+                    // Expand rows with multiple parishes (;-separated) into individual rows
+                    const expandedRows = expandRowsByParroquia(jsonData);
+                    const originalCount = jsonData.length;
+                    const expandedCount = expandedRows.length;
+
+                    // Upsert to Supabase (inserts new, updates existing by composite key)
+                    const inserted = await insertProjectsToSupabase(expandedRows);
 
                     if (inserted) {
+                        const expandNote = expandedCount > originalCount
+                            ? ` (${originalCount} filas expandidas a ${expandedCount} registros por parroquia)`
+                            : '';
                         if (importMode === 'replace') {
-                            // Replace all data
-                            projectsData = jsonData;
-                            alert(`✓ Datos reemplazados exitosamente en Supabase. Se importaron ${jsonData.length} proyectos.`);
+                            alert(`✓ Datos importados. ${expandedCount} registros procesados${expandNote}.`);
                         } else if (importMode === 'merge') {
-                            // Merge data (add only new projects based on project code)
-                            const existingCodes = new Set(projectsData.map(p => p['Código del proyecto']));
-                            let addedCount = 0;
-
-                            jsonData.forEach(project => {
-                                if (!existingCodes.has(project['Código del proyecto'])) {
-                                    projectsData.push(project);
-                                    addedCount++;
-                                }
-                            });
-
-                            alert(`✓ Merge completado exitosamente en Supabase. Se agregaron ${addedCount} nuevos proyectos.`);
+                            alert(`✓ Merge completado. ${expandedCount} registros procesados (insertados o actualizados)${expandNote}.`);
                         }
 
                         // Reload from Supabase to sync
                         await reloadDataFromSupabase();
                     } else {
-                        alert('⚠️ Error al guardar en Supabase. Intenta de nuevo.');
+                        alert('⚠️ Error al guardar en Supabase. Verifica el SQL del constraint único (ver CONTEXT.md).');
                     }
 
                 } catch (error) {
@@ -4516,6 +5591,7 @@ function getMapZoom() {
         // Add event listeners for new buttons
         document.getElementById('addProjectBtn').addEventListener('click', openAddProjectModal);
         document.getElementById('importExcelBtn').addEventListener('click', openImportModal);
+        document.getElementById('exportTemplateBtn').addEventListener('click', exportExcelTemplate);
         document.getElementById('importJsonBtn').addEventListener('click', function() {
             document.getElementById('jsonFileInput').click();
         });
