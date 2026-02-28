@@ -4389,14 +4389,19 @@ function getMapZoom() {
 
         // Get GPS coordinates for a parish within a municipality
         // Returns [lat, lon] or null if not found
-        function getParroquiaCoords(municipio, parroquia) {
+        function getParroquiaCoords(municipio, parroquia, estado) {
             if (!parroquia || parroquia.trim() === '' || parroquia === 'Cobertura Municipal') return null;
             const normalize = s => s.toLowerCase()
                 .normalize('NFD').replace(/\p{M}/gu, '')
                 .replace(/[^a-z0-9\s]/g, '').trim();
             const normParroquia = normalize(parroquia);
 
-            for (const st of ['Zulia', 'Falcón', 'Lara', 'Trujillo']) {
+            const allStates = ['Zulia', 'Falcón', 'Lara', 'Trujillo'];
+            const searchOrder = estado
+                ? [estado, ...allStates.filter(s => s !== estado)]
+                : allStates;
+
+            for (const st of searchOrder) {
                 const pList = PARROQUIAS_DATA[st]?.[municipio];
                 if (pList) {
                     const match = pList.find(p => {
@@ -4428,8 +4433,14 @@ function getMapZoom() {
                 const originalIndex = expandedProject._originalIndex;
                 if (!municipio || originalIndex === undefined) return;
 
-                const parroquiaCoords = getParroquiaCoords(municipio, parroquia);
-                const coords = parroquiaCoords || activeCoords[municipio];
+                const estado = expandedProject['Estado'];
+                const parroquiaCoords = getParroquiaCoords(municipio, parroquia, estado);
+                // Use state-specific coords for fallback to avoid cross-state confusion
+                const stateCoords = estado === 'Falcón' ? falconCoordinates
+                    : estado === 'Lara' ? laraCoordinates
+                    : estado === 'Trujillo' ? trujilloCoordinates
+                    : zuliaCoordinates;
+                const coords = parroquiaCoords || stateCoords[municipio] || activeCoords[municipio];
                 if (!coords) {
                     console.warn(`No coordinates for: "${municipio}" / "${parroquia}"`);
                     return;
@@ -4527,11 +4538,15 @@ function getMapZoom() {
             // Count unique projects by sector from filtered data
             const sectorCounts = {};
             const uniqueProjects = new Map();
-            
-            // Get unique projects from filtered expanded data
+
+            // Get unique projects from filtered expanded data — deduplicate by base project code
+            // (same project can appear N times in projectsData, once per parroquia, e.g. "PRJ002-1", "PRJ002-2")
             filteredData.forEach(expandedProject => {
                 if (expandedProject._originalIndex !== undefined) {
-                    uniqueProjects.set(expandedProject._originalIndex, projectsData[expandedProject._originalIndex]);
+                    const project = projectsData[expandedProject._originalIndex];
+                    const code = project['Código del proyecto'];
+                    const baseCode = code ? code.replace(/-\d+$/, '') : String(expandedProject._originalIndex);
+                    uniqueProjects.set(baseCode, project);
                 }
             });
             
@@ -4589,14 +4604,17 @@ function getMapZoom() {
             };
             
             const uniqueProjects = new Map();
-            
-            // Get unique projects from filtered expanded data
+
+            // Get unique projects from filtered expanded data — deduplicate by base project code
             filteredData.forEach(expandedProject => {
                 if (expandedProject._originalIndex !== undefined) {
-                    uniqueProjects.set(expandedProject._originalIndex, projectsData[expandedProject._originalIndex]);
+                    const project = projectsData[expandedProject._originalIndex];
+                    const code = project['Código del proyecto'];
+                    const baseCode = code ? code.replace(/-\d+$/, '') : String(expandedProject._originalIndex);
+                    uniqueProjects.set(baseCode, project);
                 }
             });
-            
+
             // Count status from unique projects
             uniqueProjects.forEach(project => {
                 const normalizedStatus = normalizeStatus(project['Estatus']);
