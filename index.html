@@ -804,7 +804,7 @@
         }
 
         .sort-indicator.asc:before {
-            content: "▲";
+            content: "\25B2";
         }
 
         .sort-indicator.desc {
@@ -813,7 +813,7 @@
         }
 
         .sort-indicator.desc:before {
-            content: "▼";
+            content: "\25BC";
         }
         
         .projects-table td {
@@ -1720,6 +1720,35 @@
         </div>
     </div>
 
+    <!-- Modal for Project Sheet Export -->
+    <div id="projectFichaModeModal" class="modal">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-header">
+                <h2 class="modal-title"><i class="fas fa-file-pdf"></i> Exportar Ficha de Proyecto</h2>
+                <button class="modal-close" onclick="closeProjectFichaModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1.2rem; color: var(--ocha-gray);">
+                    Seleccione cómo desea exportar la ficha del proyecto:
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                    <button onclick="exportProjectFichaFromModal('full')" class="btn btn-primary btn-block">
+                        <i class="fas fa-globe"></i> Ficha Completa
+                    </button>
+                    <button onclick="exportProjectFichaFromModal('filtered')" class="btn btn-secondary btn-block" style="background: var(--ocha-dark-blue);">
+                        <i class="fas fa-filter"></i> Ficha Según Filtros Actuales
+                    </button>
+                    <button onclick="closeProjectFichaModal()" class="btn btn-secondary btn-block">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+                <p style="margin-top: 1.2rem; font-size: 0.85rem; color: #777;">
+                    <strong>Nota:</strong> La ficha se exporta en formato PDF con paginación automática según cobertura territorial.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
@@ -1728,7 +1757,7 @@
                 <p>Dashboard Humanitario desarrollado para las autoridades regionales y municipales en colaboración con la <strong>Sub Oficina OCHA Maracaibo</strong>. Facilita el seguimiento y coordinación de proyectos humanitarios en los estados Zulia, Falcón, Lara y Trujillo.</p>
             </div>
             <div class="footer-section">
-                <h3>Enlaces Útiles</h3>
+                <h3>Enlaces atiles</h3>
                 <ul>
                     <li><a href="#" onclick="showAbout()">Acerca del Sistema</a></li>
                     <li><a href="#" onclick="showHelp()">Ayuda y Soporte</a></li>
@@ -2582,7 +2611,7 @@ function getMapZoom() {
                 const response = await fetch('proyectos-zulia-falcon.json');
                 if (response.ok) {
                     sampleProjectsData = await response.json();
-                    console.log('✓ Data loaded from JSON:', sampleProjectsData.length, 'projects');
+                    console.log('S Data loaded from JSON:', sampleProjectsData.length, 'projects');
                     return true;
                 }
             } catch (e) {
@@ -2606,7 +2635,7 @@ function getMapZoom() {
 
                 if (data && data.length > 0) {
                     sampleProjectsData = data;
-                    console.log('✓ Data loaded from Supabase:', sampleProjectsData.length, 'projects');
+                    console.log('S Data loaded from Supabase:', sampleProjectsData.length, 'projects');
                     return true;
                 }
             } catch (e) {
@@ -2624,7 +2653,7 @@ function getMapZoom() {
                     return false;
                 }
 
-                // Remove id, created_at, updated_at — auto-managed by Supabase
+                // Remove id, created_at, updated_at  auto-managed by Supabase
                 const projectsToUpsert = projects.map(p => {
                     const { id, created_at, updated_at, created_by, updated_by, ...rest } = p;
                     return rest;
@@ -2644,7 +2673,7 @@ function getMapZoom() {
                     return false;
                 }
 
-                console.log('✓ Upserted', data.length, 'records to Supabase');
+                console.log('S Upserted', data.length, 'records to Supabase');
                 return true;
             } catch (e) {
                 console.error('Supabase upsert error:', e);
@@ -2675,7 +2704,7 @@ function getMapZoom() {
 
             // If no data loaded, show message
             if (sampleProjectsData.length === 0) {
-                console.warn('⚠️  No data loaded. Using fallback...');
+                console.warn('a️  No data loaded. Using fallback...');
                 // Add fallback data here if needed
             }
 
@@ -2683,8 +2712,8 @@ function getMapZoom() {
 
             // Expand data for proper filtering
             expandedData = expandProjectData(projectsData);
-            console.log('✓ Loaded', projectsData.length, 'original projects');
-            console.log('✓ Expanded to', expandedData.length, 'filterable rows');
+            console.log('S Loaded', projectsData.length, 'original projects');
+            console.log('S Expanded to', expandedData.length, 'filterable rows');
 
             // Setup state selector listeners
             setupStateListeners();
@@ -2723,7 +2752,7 @@ function getMapZoom() {
                     // Filter data by state and apply other filters
                     filterDataByState();
 
-                    console.log('✓ State changed to:', currentState);
+                    console.log('S State changed to:', currentState);
                 });
             });
         }
@@ -2737,9 +2766,9 @@ function getMapZoom() {
 
             if (municipios.length > 0) {
                 if (municipios.length === 1) {
-                    indicatorText = `📍 ${municipios[0]}`;
+                    indicatorText = `x ${municipios[0]}`;
                 } else {
-                    indicatorText = `📍 ${municipios.length} municipios seleccionados`;
+                    indicatorText = `x ${municipios.length} municipios seleccionados`;
                 }
             }
 
@@ -2792,7 +2821,7 @@ function getMapZoom() {
                 return;
             }
 
-            // Populate dropdown — group by municipality when multiple selected
+            // Populate dropdown  group by municipality when multiple selected
             dropdown.innerHTML = `
                 <div class="multi-select-option">
                     <input type="checkbox" id="all-parroquias" checked>
@@ -2801,7 +2830,7 @@ function getMapZoom() {
             `;
 
             if (selectedMunicipios.length === 1) {
-                // Single municipality — flat list
+                // Single municipality  flat list
                 const parroquias = getParroquiasForMunicipio(selectedMunicipios[0], currentState);
                 parroquias.forEach(p => {
                     const div = document.createElement('div');
@@ -2813,7 +2842,7 @@ function getMapZoom() {
                     dropdown.appendChild(div);
                 });
             } else {
-                // Multiple municipalities — grouped with headers
+                // Multiple municipalities  grouped with headers
                 selectedMunicipios.forEach(municipio => {
                     const parroquias = getParroquiasForMunicipio(municipio, currentState);
                     if (parroquias.length === 0) return;
@@ -2948,7 +2977,7 @@ function getMapZoom() {
             if (parroquias.length === 0) {
                 container.innerHTML = `<input type="text" id="formParroquias" class="form-parroquia-fallback"
                     placeholder="Una sola parroquia por registro">`;
-                if (hint) hint.textContent = '⚠ Cada registro corresponde a UNA parroquia.';
+                if (hint) hint.textContent = 'a Cada registro corresponde a UNA parroquia.';
                 return;
             }
 
@@ -2969,7 +2998,7 @@ function getMapZoom() {
             html += `</div><input type="hidden" id="formParroquias" value="">`;
             container.innerHTML = html;
 
-            if (hint) hint.textContent = `📌 Seleccione UNA parroquia. Para múltiples, cree un registro por parroquia.`;
+            if (hint) hint.textContent = `xR Seleccione UNA parroquia. Para múltiples, cree un registro por parroquia.`;
 
             // Sync hidden input on radio change
             const multi = container.querySelector('#formParroquiasMulti');
@@ -2989,7 +3018,7 @@ function getMapZoom() {
             container.innerHTML = humanitarianSectors.map(s => `
                 <label class="parroquia-option">
                     <input type="checkbox" class="form-sector-check" value="${s.name}">
-                    <span><strong>${s.shortName}</strong> — ${s.name}</span>
+                    <span><strong>${s.shortName}</strong>  ${s.name}</span>
                 </label>
             `).join('');
             // Remove previous listener by replacing the element
@@ -3007,7 +3036,7 @@ function getMapZoom() {
 
         // Export Excel template for partner data collection (with Listas sheet)
         function exportExcelTemplate() {
-            // Plantilla con filtros en cascada: Estado → Municipio → Parroquia
+            // Plantilla con filtros en cascada: Estado   Municipio   Parroquia
             // Generada con generar_plantilla.py + Admin Maestro.xlsx (342 parroquias)
             const b64 = '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';
             const bin = atob(b64);
@@ -3046,7 +3075,7 @@ function getMapZoom() {
                 municipiosContainer.appendChild(optionDiv);
             });
 
-            console.log('✓ Municipality list updated with', municipalities.length, 'municipalities');
+            console.log('S Municipality list updated with', municipalities.length, 'municipalities');
 
             // Reset parish filter when municipality list changes (state change)
             const parSection = document.getElementById('parroquiaFilterSection');
@@ -3118,7 +3147,7 @@ function getMapZoom() {
                 }
             });
 
-            console.log('✓ Municipality event listeners initialized');
+            console.log('S Municipality event listeners initialized');
         }
 
         function initializeDashboard() {
@@ -3851,8 +3880,8 @@ function getMapZoom() {
                 'ASONACOP': 'ASONACOP',
                 'ASociacion civil ATRAVEZANDO': 'ATRAVEZANDO',
                 'AZUL POSITIVO': 'AZUL POSITIVO',
-                'Acción Campesina': 'ACCIÓN CAMPESINA',
-                'Acción contra el Hambre': 'ACCIÓN CONTRA EL HAMBRE',
+                'Acción Campesina': 'ACCIN CAMPESINA',
+                'Acción contra el Hambre': 'ACCIN CONTRA EL HAMBRE',
                 'Asociacion civil ATRAVEZANDO': 'ATRAVEZANDO',
                 'CARITAS VENEZUELA': 'CÁRITAS VENEZUELA',
                 'CESVI': 'CESVI',
@@ -3899,7 +3928,7 @@ function getMapZoom() {
             };
             
             // Calculate unique projects by extracting base code (without correlativo suffix)
-            // Example: PRJ002-1, PRJ002-2 → PRJ002 (counts as 1 unique project)
+            // Example: PRJ002-1, PRJ002-2   PRJ002 (counts as 1 unique project)
             // This handles the correlativo structure used to avoid unique constraint violations
             const uniqueFilteredProjects = new Set(
                 filteredData
@@ -4103,7 +4132,7 @@ function getMapZoom() {
                 nameCell.style.maxWidth = '300px';
                 nameCell.title = project['Nombre del proyecto'] || 'N/A';
                 
-                // Municipality — single value from the record (no concatenation)
+                // Municipality  single value from the record (no concatenation)
                 const munCell = row.insertCell();
                 const displayMunicipalities = project['Municipio'] || 'N/A';
                 munCell.textContent = displayMunicipalities;
@@ -4112,7 +4141,7 @@ function getMapZoom() {
                 // Parroquia
                 const parroquiaCell = row.insertCell();
                 const parroquiaVal = project['Parroquias'] || '';
-                parroquiaCell.textContent = parroquiaVal || '—';
+                parroquiaCell.textContent = parroquiaVal || '';
                 if (parroquiaVal) parroquiaCell.title = parroquiaVal;
 
                 // Status
@@ -4146,6 +4175,9 @@ function getMapZoom() {
                     <div class="actions-container">
                         <button class="action-btn primary" onclick="showProjectDetails(${projectIndex})" title="Ver detalles del proyecto">
                             <i class="fas fa-eye"></i> Ver
+                        </button>
+                        <button class="action-btn warning" onclick="openProjectFichaModal(${projectIndex})" title="Descargar ficha PDF del proyecto">
+                            <i class="fas fa-file-pdf"></i> Ficha
                         </button>
                         <button class="action-btn secondary" onclick="editProject(${projectIndex})" title="Editar proyecto">
                             <i class="fas fa-edit"></i> Editar
@@ -4424,7 +4456,7 @@ function getMapZoom() {
             const activeCoords = getActiveCoordinates();
 
             // Group by GPS coordinates: one entry per unique location
-            // Key: "lat,lon" — handles multiple projects at same parish GPS point
+            // Key: "lat,lon"  handles multiple projects at same parish GPS point
             const byCoords = {};
 
             filteredData.forEach(expandedProject => {
@@ -4507,7 +4539,7 @@ function getMapZoom() {
                     <div style="max-width: 300px;">
                         <h4 style="color: var(--ocha-blue); margin-bottom: 0.25rem;">${locationLabel}</h4>
                         <p style="margin: 0 0 0.5rem; font-size: 0.78rem; color: #888;">
-                            ${isParroquia ? '📍 Parroquia' : '🏛 Municipio (sin coord. de parroquia)'}
+                            ${isParroquia ? 'Parroquia' : 'Municipio (sin coord. de parroquia)'}
                         </p>
                         <p style="margin: 0 0 0.4rem;"><strong>Proyectos:</strong> ${projects.length} &nbsp;|&nbsp; <strong>Orgs:</strong> ${organizations.length}</p>
                         ${projects.slice(0, 3).map(p => `
@@ -4539,7 +4571,7 @@ function getMapZoom() {
             const sectorCounts = {};
             const uniqueProjects = new Map();
 
-            // Get unique projects from filtered expanded data — deduplicate by base project code
+            // Get unique projects from filtered expanded data  deduplicate by base project code
             // (same project can appear N times in projectsData, once per parroquia, e.g. "PRJ002-1", "PRJ002-2")
             filteredData.forEach(expandedProject => {
                 if (expandedProject._originalIndex !== undefined) {
@@ -4605,7 +4637,7 @@ function getMapZoom() {
             
             const uniqueProjects = new Map();
 
-            // Get unique projects from filtered expanded data — deduplicate by base project code
+            // Get unique projects from filtered expanded data  deduplicate by base project code
             filteredData.forEach(expandedProject => {
                 if (expandedProject._originalIndex !== undefined) {
                     const project = projectsData[expandedProject._originalIndex];
@@ -4741,6 +4773,574 @@ function getMapZoom() {
             modal.classList.add('active');
         }
 
+        // ===================== PROJECT SHEET PDF (ONE PAGE) =====================
+        let fichaProjectIndex = -1;
+
+        function normalizeKeyForMatch(value) {
+            if (!value && value !== 0) return '';
+            return String(value)
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/\p{M}/gu, '')
+                .trim();
+        }
+
+        function getProjectGroupKey(project) {
+            if (!project) return '';
+            const rawCode = (project['Código del proyecto'] || '').toString().trim();
+            const baseCode = rawCode ? rawCode.replace(/-\d+$/, '') : '';
+            if (baseCode) {
+                return `code:${normalizeKeyForMatch(baseCode)}`;
+            }
+            const projectName = normalizeKeyForMatch(project['Nombre del proyecto'] || '');
+            const orgLeader = normalizeKeyForMatch(project['Organización Líder'] || '');
+            return `name:${projectName}|org:${orgLeader}`;
+        }
+
+        function getSourceRowsForFicha(scope) {
+            if (scope !== 'filtered') {
+                return projectsData.slice();
+            }
+            const byOriginalIndex = new Map();
+            filteredData.forEach(row => {
+                const idx = row ? row._originalIndex : undefined;
+                if (typeof idx === 'number' && idx >= 0 && idx < projectsData.length && !byOriginalIndex.has(idx)) {
+                    byOriginalIndex.set(idx, projectsData[idx]);
+                }
+            });
+            return Array.from(byOriginalIndex.values());
+        }
+
+        function getProjectRowsForFicha(projectIndex, scope) {
+            const baseProject = projectsData[projectIndex];
+            if (!baseProject) return [];
+
+            const targetKey = getProjectGroupKey(baseProject);
+            const sourceRows = getSourceRowsForFicha(scope);
+            const matchedRows = sourceRows.filter(row => getProjectGroupKey(row) === targetKey);
+            const rows = matchedRows.length > 0 ? matchedRows : [baseProject];
+
+            const seen = new Set();
+            const deduped = [];
+            rows.forEach(row => {
+                const dedupeKey = [
+                    normalizeKeyForMatch(row['Estado'] || ''),
+                    normalizeKeyForMatch(row['Municipio'] || ''),
+                    normalizeKeyForMatch(row['Parroquias'] || ''),
+                    normalizeKeyForMatch(row['Código del proyecto'] || '')
+                ].join('|');
+                if (!seen.has(dedupeKey)) {
+                    seen.add(dedupeKey);
+                    deduped.push(row);
+                }
+            });
+
+            deduped.sort((a, b) => {
+                const aKey = `${a['Estado'] || ''}|${a['Municipio'] || ''}|${a['Parroquias'] || ''}`;
+                const bKey = `${b['Estado'] || ''}|${b['Municipio'] || ''}|${b['Parroquias'] || ''}`;
+                return aKey.localeCompare(bKey, 'es', { sensitivity: 'base' });
+            });
+
+            return deduped;
+        }
+
+        function buildFiltersSummaryForFicha() {
+            const summary = [];
+            if (currentFilters.org) summary.push(`Organización: ${currentFilters.org}`);
+            if (currentFilters.municipio && currentFilters.municipio.length > 0) {
+                summary.push(
+                    currentFilters.municipio.length === 1
+                        ? `Municipio: ${currentFilters.municipio[0]}`
+                        : `Municipios (${currentFilters.municipio.length})`
+                );
+            }
+            if (currentFilters.parroquia && currentFilters.parroquia.length > 0) {
+                summary.push(
+                    currentFilters.parroquia.length === 1
+                        ? `Parroquia: ${currentFilters.parroquia[0]}`
+                        : `Parroquias (${currentFilters.parroquia.length})`
+                );
+            }
+            if (currentFilters.estatus) summary.push(`Estatus: ${currentFilters.estatus}`);
+            if (currentFilters.sector) {
+                const sector = humanitarianSectors.find(s => s.id === currentFilters.sector);
+                if (sector) summary.push(`Sector: ${sector.shortName}`);
+            }
+            if (currentFilters.dateStart || currentFilters.dateEnd) {
+                summary.push(`Fechas: ${currentFilters.dateStart || 'N/A'} a ${currentFilters.dateEnd || 'N/A'}`);
+            }
+            if (summary.length === 0) {
+                return 'Sin filtros específicos';
+            }
+            return summary.join(' | ');
+        }
+
+        function sanitizeFileName(value) {
+            const normalized = (value || 'proyecto')
+                .toString()
+                .normalize('NFD')
+                .replace(/\p{M}/gu, '')
+                .replace(/[^a-zA-Z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '')
+                .toLowerCase();
+            return (normalized || 'proyecto').substring(0, 70);
+        }
+
+        function openProjectFichaModal(projectIndex) {
+            if (!projectsData || projectIndex < 0 || projectIndex >= projectsData.length) {
+                alert('No se pudo preparar la ficha del proyecto seleccionado.');
+                return;
+            }
+            fichaProjectIndex = projectIndex;
+            document.getElementById('projectFichaModeModal').classList.add('active');
+        }
+
+        function closeProjectFichaModal() {
+            document.getElementById('projectFichaModeModal').classList.remove('active');
+            fichaProjectIndex = -1;
+        }
+
+        function exportProjectFichaFromModal(scope) {
+            const selectedIndex = fichaProjectIndex;
+            closeProjectFichaModal();
+            exportProjectFicha(selectedIndex, scope);
+        }
+
+        function getDominantNormalizedStatus(rows) {
+            const count = {};
+            rows.forEach(row => {
+                const st = normalizeStatus(row['Estatus'] || '');
+                count[st] = (count[st] || 0) + 1;
+            });
+            const ordered = Object.keys(count).sort((a, b) => count[b] - count[a]);
+            return ordered.length > 0 ? ordered[0] : 'En proyecto';
+        }
+
+        function fitSingleLine(doc, text, maxWidth) {
+            const safe = (text || '').toString();
+            if (doc.getTextWidth(safe) <= maxWidth) return safe;
+            let output = safe;
+            while (output.length > 0 && doc.getTextWidth(`${output}...`) > maxWidth) {
+                output = output.slice(0, -1);
+            }
+            return `${output}...`;
+        }
+
+        function drawTextInBox(doc, text, x, y, width, height, opts = {}) {
+            const padding = opts.padding || 1.8;
+            const fontSize = opts.fontSize || 8;
+            const lineHeight = opts.lineHeight || 3.8;
+            const maxLines = opts.maxLines || Math.max(1, Math.floor((height - (padding * 2)) / lineHeight));
+            const fontStyle = opts.fontStyle || 'normal';
+            const color = opts.textColor || [58, 58, 58];
+            const safeText = (text && String(text).trim()) ? String(text) : 'No especificado';
+
+            doc.setFont('helvetica', fontStyle);
+            doc.setFontSize(fontSize);
+            doc.setTextColor(color[0], color[1], color[2]);
+
+            let lines = doc.splitTextToSize(safeText, Math.max(10, width - (padding * 2)));
+            if (lines.length > maxLines) {
+                lines = lines.slice(0, maxLines);
+                let lastLine = lines[maxLines - 1] || '';
+                while (lastLine.length > 0 && doc.getTextWidth(`${lastLine}...`) > (width - (padding * 2))) {
+                    lastLine = lastLine.slice(0, -1);
+                }
+                lines[maxLines - 1] = `${lastLine}...`;
+            }
+
+            const startY = y + padding + 2.2;
+            lines.forEach((line, idx) => {
+                doc.text(line, x + padding, startY + (idx * lineHeight));
+            });
+        }
+
+        function drawSectionCard(doc, title, value, x, y, width, height) {
+            doc.setFillColor(245, 245, 245);
+            doc.setDrawColor(215, 225, 233);
+            doc.roundedRect(x, y, width, height, 1.8, 1.8, 'FD');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(0, 93, 146);
+            doc.text(title, x + 2.4, y + 4.5);
+
+            drawTextInBox(doc, value, x + 1.5, y + 5.3, width - 3, height - 7, {
+                fontSize: 7.9,
+                lineHeight: 3.5,
+                maxLines: 6,
+                textColor: [58, 58, 58]
+            });
+        }
+
+        function getFichaDensityConfig(totalRows) {
+            if (totalRows > 90) {
+                return {
+                    label: 'alta',
+                    previewRows: 14,
+                    previewRowHeight: 4.0,
+                    previewFontSize: 6.8,
+                    detailFontSize: 6.8,
+                    detailCellPadding: 1.1,
+                    maxCoverageRowsPage: 50,
+                    maxImplementationRowsPage: 48
+                };
+            }
+            if (totalRows > 45) {
+                return {
+                    label: 'media',
+                    previewRows: 12,
+                    previewRowHeight: 4.3,
+                    previewFontSize: 7.0,
+                    detailFontSize: 7.0,
+                    detailCellPadding: 1.3,
+                    maxCoverageRowsPage: 42,
+                    maxImplementationRowsPage: 40
+                };
+            }
+            return {
+                label: 'baja',
+                previewRows: 11,
+                previewRowHeight: 4.6,
+                previewFontSize: 7.2,
+                detailFontSize: 7.3,
+                detailCellPadding: 1.5,
+                maxCoverageRowsPage: 36,
+                maxImplementationRowsPage: 34
+            };
+        }
+
+        function drawFichaDetailPageHeader(doc, title, subtitle) {
+            const pageWidth = doc.internal.pageSize.getWidth();
+            doc.setFillColor(0, 125, 188);
+            doc.rect(0, 0, pageWidth, 18, 'F');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(255, 255, 255);
+            doc.text(title, 10, 8.3);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.8);
+            doc.text(subtitle, 10, 13.4);
+        }
+
+        function exportProjectFicha(projectIndex, scope) {
+            scope = scope === 'filtered' ? 'filtered' : 'full';
+
+            if (!projectsData || typeof projectIndex !== 'number' || projectIndex < 0 || projectIndex >= projectsData.length) {
+                alert('No se pudo generar la ficha: proyecto no válido.');
+                return;
+            }
+
+            const rows = getProjectRowsForFicha(projectIndex, scope);
+            if (!rows || rows.length === 0) {
+                alert('No hay datos disponibles para generar la ficha.');
+                return;
+            }
+
+            const ref = rows[0];
+            const projectName = ref['Nombre del proyecto'] || 'Proyecto sin nombre';
+            const rawCode = ref['Código del proyecto'] || 'Sin código';
+            const baseCode = rawCode !== 'Sin código' ? rawCode.replace(/-\d+$/, '') : rawCode;
+
+            const orgLeaders = [...new Set(
+                rows.map(r => normalizeOrganizationName(r['Organización Líder']) || r['Organización Líder']).filter(Boolean)
+            )];
+            const orgImplementers = [...new Set(
+                rows.map(r => normalizeOrganizationName(r['Organización implementadora']) || r['Organización implementadora']).filter(Boolean)
+            )];
+
+            const estados = [...new Set(rows.map(r => (r['Estado'] || '').trim()).filter(Boolean))];
+            const municipios = [...new Set(rows.map(r => (r['Municipio'] || '').trim()).filter(Boolean))];
+            const estatusPredominante = getDominantNormalizedStatus(rows);
+
+            // Cobertura única: Estado + Municipio
+            const coverageRows = [];
+            const seenCoverage = new Set();
+            rows.forEach(r => {
+                const estado = (r['Estado'] || '').trim() || 'N/D';
+                const municipio = (r['Municipio'] || '').trim() || 'N/D';
+                const key = `${normalizeKeyForMatch(estado)}|${normalizeKeyForMatch(municipio)}`;
+                if (!seenCoverage.has(key)) {
+                    seenCoverage.add(key);
+                    coverageRows.push({ estado, municipio });
+                }
+            });
+            coverageRows.sort((a, b) => {
+                const aKey = `${a.estado}|${a.municipio}`;
+                const bKey = `${b.estado}|${b.municipio}`;
+                return aKey.localeCompare(bKey, 'es', { sensitivity: 'base' });
+            });
+
+            // Ubicación única: Estado + Municipio + Parroquia
+            const implementationRows = [];
+            const seenImplementation = new Set();
+            rows.forEach(r => {
+                const estado = (r['Estado'] || '').trim() || 'N/D';
+                const municipio = (r['Municipio'] || '').trim() || 'N/D';
+                const parroquiaRaw = (r['Parroquias'] || '').trim();
+                const parroquia = parroquiaRaw || 'Cobertura Municipal';
+                const key = `${normalizeKeyForMatch(estado)}|${normalizeKeyForMatch(municipio)}|${normalizeKeyForMatch(parroquia)}`;
+                if (!seenImplementation.has(key)) {
+                    seenImplementation.add(key);
+                    implementationRows.push({ estado, municipio, parroquia });
+                }
+            });
+            implementationRows.sort((a, b) => {
+                const aKey = `${a.estado}|${a.municipio}|${a.parroquia}`;
+                const bKey = `${b.estado}|${b.municipio}|${b.parroquia}`;
+                return aKey.localeCompare(bKey, 'es', { sensitivity: 'base' });
+            });
+
+            // Parroquias únicas (solo parroquias reales)
+            const parroquiasUnicas = [...new Set(
+                implementationRows
+                    .map(r => r.parroquia)
+                    .filter(p => p && p !== 'Cobertura Municipal')
+            )];
+
+            const allAreas = [];
+            rows.forEach(row => {
+                const areaText = row['Área de intervención complementaria'] || '';
+                areaText.split(';').map(a => a.trim()).filter(Boolean).forEach(a => {
+                    if (!allAreas.includes(a)) allAreas.push(a);
+                });
+            });
+
+            const activitySet = [...new Set(rows.map(r => (r['Actividad'] || '').trim()).filter(Boolean))];
+            const activityText = activitySet.length > 0 ? activitySet[0] : 'No especificado';
+            const extraActivities = activitySet.length > 1 ? activitySet.length - 1 : 0;
+
+            const startTimestamps = rows
+                .map(r => r['Fecha de Inicio'])
+                .map(d => new Date(d))
+                .filter(d => !isNaN(d.getTime()))
+                .map(d => d.getTime());
+            const endTimestamps = rows
+                .map(r => r['Fecha Prevista de Finalización'])
+                .map(d => new Date(d))
+                .filter(d => !isNaN(d.getTime()))
+                .map(d => d.getTime());
+
+            const minStartDate = startTimestamps.length > 0 ? new Date(Math.min(...startTimestamps)) : null;
+            const maxEndDate = endTimestamps.length > 0 ? new Date(Math.max(...endTimestamps)) : null;
+
+            const statusPalette = {
+                'En proyecto': [236, 161, 84],
+                'En ejecución': [0, 125, 188],
+                'Terminado': [125, 186, 0]
+            };
+            const statusColor = statusPalette[estatusPredominante] || [90, 90, 90];
+            const density = getFichaDensityConfig(coverageRows.length + implementationRows.length);
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const margin = 10;
+            const contentWidth = pageWidth - (margin * 2);
+
+            // Header band
+            doc.setFillColor(0, 125, 188);
+            doc.rect(0, 0, pageWidth, 24, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            doc.setTextColor(255, 255, 255);
+            doc.text('FICHA DE PROYECTO HUMANITARIO', margin, 10);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.2);
+            doc.text('Sub Oficina OCHA Maracaibo', margin, 15.5);
+
+            doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+            doc.roundedRect(pageWidth - 62, 6, 52, 10.5, 1.8, 1.8, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.8);
+            doc.setTextColor(255, 255, 255);
+            doc.text(estatusPredominante.toUpperCase(), pageWidth - 36, 12.5, { align: 'center' });
+
+            // Scope label
+            const scopeLabel = scope === 'full'
+                ? 'Alcance: completo (todas las ubicaciones del proyecto)'
+                : 'Alcance: según filtros actuales';
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8.3);
+            doc.setTextColor(0, 93, 146);
+            doc.text(scopeLabel, margin, 28.5);
+
+            // Project title + organization highlight
+            doc.setFillColor(232, 244, 248);
+            doc.setDrawColor(0, 125, 188);
+            doc.roundedRect(margin, 31, contentWidth, 30, 2, 2, 'FD');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(0, 93, 146);
+            doc.text('PROYECTO', margin + 2.5, 36);
+            drawTextInBox(doc, projectName, margin + 2, 36.5, contentWidth - 4, 11.8, {
+                fontSize: 10.3,
+                lineHeight: 4.1,
+                maxLines: 2,
+                fontStyle: 'bold',
+                textColor: [58, 58, 58]
+            });
+
+            const orgHighlight = orgLeaders.length > 0 ? orgLeaders.join(', ') : 'No especificado';
+            doc.setFillColor(0, 93, 146);
+            doc.roundedRect(margin + 2, 50.8, contentWidth - 4, 8, 1.2, 1.2, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.1);
+            doc.setTextColor(255, 255, 255);
+            doc.text('ORGANIZACIÓN LÍDER:', margin + 4, 55.6);
+            doc.setFont('helvetica', 'normal');
+            doc.text(fitSingleLine(doc, orgHighlight, contentWidth - 42), margin + 35, 55.6);
+
+            const colGap = 6;
+            const colWidth = (contentWidth - colGap) / 2;
+
+            const idCardText = [
+                `Código base: ${baseCode || 'Sin código'}`,
+                `Registros de implementación: ${rows.length}`,
+                `Inicio: ${minStartDate ? minStartDate.toLocaleDateString('es-ES') : 'No especificado'}`,
+                `Fin: ${maxEndDate ? maxEndDate.toLocaleDateString('es-ES') : 'No especificado'}`
+            ].join('\n');
+
+            const orgCardText = [
+                `Org. líder: ${orgLeaders.length > 0 ? orgLeaders.join(', ') : 'No especificado'}`,
+                `Org. implementadora: ${orgImplementers.length > 0 ? orgImplementers.join(', ') : 'No especificado'}`
+            ].join('\n');
+
+            const sectorText = allAreas.length > 0 ? allAreas.join(', ') : 'No especificado';
+            const totalsText = [
+                `Estados únicos: ${estados.length}`,
+                `Municipios únicos: ${municipios.length}`,
+                `Parroquias únicas: ${parroquiasUnicas.length}`
+            ].join('\n');
+
+            drawSectionCard(doc, 'Identificación y cronograma', idCardText, margin, 64, colWidth, 28);
+            drawSectionCard(doc, 'Organizaciones', orgCardText, margin + colWidth + colGap, 64, colWidth, 28);
+            drawSectionCard(doc, 'Sectores / Áreas de intervención', sectorText, margin, 96, colWidth, 28);
+            drawSectionCard(doc, 'Totalización territorial', totalsText, margin + colWidth + colGap, 96, colWidth, 28);
+
+            let currentY = 129;
+
+            // Coverage section (compact flow, no forced page per section)
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9.2);
+            doc.setTextColor(0, 93, 146);
+            doc.text('Cobertura Territorial', margin, currentY);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.6);
+            doc.setTextColor(90, 90, 90);
+            doc.text('Estados y municipios únicos', margin, currentY + 3.8);
+            currentY += 5.5;
+
+            doc.autoTable({
+                startY: currentY,
+                head: [['Estado', 'Municipio']],
+                body: (coverageRows.length > 0 ? coverageRows : [{ estado: 'N/D', municipio: 'N/D' }])
+                    .map(r => [r.estado, r.municipio]),
+                styles: {
+                    fontSize: density.detailFontSize,
+                    cellPadding: density.detailCellPadding,
+                    overflow: 'ellipsize',
+                    lineColor: [220, 225, 229],
+                    lineWidth: 0.1
+                },
+                headStyles: {
+                    fillColor: [0, 93, 146],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: { fillColor: [248, 249, 250] },
+                margin: { left: margin, right: margin, bottom: 16 },
+                columnStyles: {
+                    0: { cellWidth: 45 },
+                    1: { cellWidth: 145 }
+                }
+            });
+            currentY = doc.lastAutoTable.finalY + 7;
+
+            if (currentY > 260) {
+                doc.addPage();
+                currentY = 20;
+            }
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9.2);
+            doc.setTextColor(0, 93, 146);
+            doc.text('Parroquias únicas con estado y municipio', margin, currentY);
+            currentY += 2.8;
+
+            doc.autoTable({
+                startY: currentY + 2,
+                head: [['Estado', 'Municipio', 'Parroquia']],
+                body: (implementationRows.length > 0 ? implementationRows : [{ estado: 'N/D', municipio: 'N/D', parroquia: 'N/D' }])
+                    .map(r => [r.estado, r.municipio, r.parroquia]),
+                styles: {
+                    fontSize: density.detailFontSize,
+                    cellPadding: density.detailCellPadding,
+                    overflow: 'ellipsize',
+                    lineColor: [220, 225, 229],
+                    lineWidth: 0.1
+                },
+                headStyles: {
+                    fillColor: [0, 93, 146],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: { fillColor: [248, 249, 250] },
+                margin: { left: margin, right: margin, bottom: 16 },
+                columnStyles: {
+                    0: { cellWidth: 36 },
+                    1: { cellWidth: 68 },
+                    2: { cellWidth: 86 }
+                }
+            });
+            currentY = doc.lastAutoTable.finalY + 7;
+
+            // Activity after territorial coverage
+            if (currentY > 245) {
+                doc.addPage();
+                currentY = 20;
+            }
+
+            const activityBoxHeight = Math.min(66, 272 - currentY);
+            doc.setFillColor(245, 245, 245);
+            doc.setDrawColor(215, 225, 233);
+            doc.roundedRect(margin, currentY, contentWidth, activityBoxHeight, 1.8, 1.8, 'FD');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(0, 93, 146);
+            doc.text('Descripción de la actividad', margin + 2.5, currentY + 4.8);
+
+            const extraActivityNote = extraActivities > 0
+                ? `\n\nNota: existen ${extraActivities} descripción(es) adicional(es) de actividad en otros registros del proyecto.`
+                : '';
+            drawTextInBox(doc, `${activityText}${extraActivityNote}`, margin + 2, currentY + 6, contentWidth - 4, activityBoxHeight - 8, {
+                fontSize: 8,
+                lineHeight: 3.7,
+                maxLines: Math.max(5, Math.floor((activityBoxHeight - 10) / 3.7)),
+                textColor: [58, 58, 58]
+            });
+
+            const now = new Date();
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let page = 1; page <= totalPages; page++) {
+                doc.setPage(page);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.1);
+                doc.setTextColor(95, 95, 95);
+                if (page === 1) {
+                    doc.text(`Generado: ${now.toLocaleDateString('es-ES')} ${now.toLocaleTimeString('es-ES')}`, margin, 286.5);
+                }
+                doc.text(`Página ${page} de ${totalPages}`, pageWidth - margin, 286.5, { align: 'right' });
+            }
+
+            const timestamp = now.toISOString().split('T')[0];
+            const scopeTag = scope === 'full' ? 'completa' : 'filtrada';
+            const safeFileName = sanitizeFileName(`${baseCode}_${projectName}`);
+            doc.save(`ficha_proyecto_${safeFileName}_${scopeTag}_${timestamp}.pdf`);
+        }
         function exportToExcel(data, filename) {
             if (data.length === 0) {
                 alert('No hay datos para exportar');
@@ -4766,7 +5366,7 @@ function getMapZoom() {
                                                  p['Organización Líder'] === project['Organización Líder'])
                 );
 
-            // Prepare data for export — each record has a single municipality and parish
+            // Prepare data for export  each record has a single municipality and parish
             const exportData = uniqueData.map(project => ({
                 'Organización Líder': normalizeOrganizationName(project['Organización Líder']) || '',
                 'Organización Implementadora': normalizeOrganizationName(project['Organización implementadora']) || '',
@@ -4798,7 +5398,7 @@ function getMapZoom() {
                 return;
             }
 
-            // ── Build table rows based on mode ──────────────────────────────
+            //  Build table rows based on mode 
             // Helper: sector abbreviations for a project
             function getSectorText(project) {
                 const area = project['Área de intervención complementaria'] || '';
@@ -4817,7 +5417,7 @@ function getMapZoom() {
             let tableHead = [];
 
             if (mode === 'full') {
-                // ── FULL MODE: one row per parish record ───────────────────
+                //  FULL MODE: one row per parish record 
                 tableHead = [['Sectores', 'Org. Líder', 'Org. Impl.', 'Proyecto', 'Municipio', 'Parroquia', 'Estatus', 'F. Inicio', 'F. Fin']];
 
                 const seen = new Set();
@@ -4831,17 +5431,17 @@ function getMapZoom() {
                     tableRows.push([
                         getSectorText(p),
                         normalizeOrganizationName(p['Organización Líder']) || '',
-                        normalizeOrganizationName(p['Organización implementadora']) || '—',
+                        normalizeOrganizationName(p['Organización implementadora']) || '',
                         p['Nombre del proyecto'] || '',
                         p['Municipio'] || '',
-                        (p['Parroquias'] || '').trim() || '—',
+                        (p['Parroquias'] || '').trim() || '',
                         normalizeStatus(p['Estatus']) || '',
                         fmtDate(p['Fecha de Inicio']),
                         fmtDate(p['Fecha Prevista de Finalización'])
                     ]);
                 });
             } else {
-                // ── SHORT MODE: group by (Código + Municipio), list parishes ─
+                //  SHORT MODE: group by (Código + Municipio), list parishes 
                 tableHead = [['Sectores', 'Org. Líder', 'Org. Impl.', 'Proyecto', 'Municipio', 'Parroquias', 'Estatus', 'F. Inicio', 'F. Fin']];
 
                 const groups = new Map();
@@ -4854,7 +5454,7 @@ function getMapZoom() {
                         groups.set(key, { base: p, parishes: [] });
                     }
                     const parroquia = (p['Parroquias'] || '').trim();
-                    if (parroquia && parroquia !== '—' && !groups.get(key).parishes.includes(parroquia)) {
+                    if (parroquia && parroquia !== '' && !groups.get(key).parishes.includes(parroquia)) {
                         groups.get(key).parishes.push(parroquia);
                     }
                 });
@@ -4862,11 +5462,11 @@ function getMapZoom() {
                 groups.forEach(({ base, parishes }) => {
                     const parroquiasText = parishes.length > 0
                         ? parishes.join(', ')
-                        : (base['Parroquias'] || '—');
+                        : (base['Parroquias'] || '');
                     tableRows.push([
                         getSectorText(base),
                         normalizeOrganizationName(base['Organización Líder']) || '',
-                        normalizeOrganizationName(base['Organización implementadora']) || '—',
+                        normalizeOrganizationName(base['Organización implementadora']) || '',
                         base['Nombre del proyecto'] || '',
                         base['Municipio'] || '',
                         parroquiasText,
@@ -4882,7 +5482,7 @@ function getMapZoom() {
 
             const modeLabel = mode === 'full' ? 'Vista por Parroquias' : 'Vista por Municipios';
 
-            // ── PDF Header ──────────────────────────────────────────────────
+            //  PDF Header 
             const stateNames = {
                 'Zulia': 'Zulia', 'Falcón': 'Falcón',
                 'Lara': 'Lara', 'Trujillo': 'Trujillo',
@@ -4893,11 +5493,11 @@ function getMapZoom() {
 
             let mainTitle = 'Registro de Proyectos Humanitarios';
             if (municipios.length === 1) {
-                mainTitle += ` — Municipio ${municipios[0]}`;
+                mainTitle += `  Municipio ${municipios[0]}`;
             } else if (municipios.length > 1) {
-                mainTitle += ` — ${municipios.length} Municipios`;
+                mainTitle += `  ${municipios.length} Municipios`;
             } else {
-                mainTitle += ` — ${selectedState}`;
+                mainTitle += `  ${selectedState}`;
             }
 
             doc.setFontSize(15);
@@ -4927,7 +5527,7 @@ function getMapZoom() {
             }
             if (currentFilters.estatus) activeFilters.push(`Estatus: ${currentFilters.estatus}`);
             if (currentFilters.dateStart || currentFilters.dateEnd) {
-                activeFilters.push(`Período: ${currentFilters.dateStart || 'N/A'} — ${currentFilters.dateEnd || 'N/A'}`);
+                activeFilters.push(`Período: ${currentFilters.dateStart || 'N/A'}  ${currentFilters.dateEnd || 'N/A'}`);
             }
 
             let headerEndY = 24;
@@ -4935,7 +5535,7 @@ function getMapZoom() {
                 doc.setFontSize(8);
                 doc.setTextColor(100, 100, 100);
                 let yPos = 27;
-                activeFilters.forEach(f => { doc.text(`• ${f}`, 15, yPos); yPos += 4; });
+                activeFilters.forEach(f => { doc.text(`⬢ ${f}`, 15, yPos); yPos += 4; });
                 headerEndY = yPos;
                 doc.setTextColor(0, 0, 0);
             }
@@ -4945,7 +5545,7 @@ function getMapZoom() {
             doc.setTextColor(60, 60, 60);
             doc.text(`Total registros: ${tableRows.length}`, 15, headerEndY + 3);
 
-            // ── Column widths — 9 columns: Sectores|OrgLíder|OrgImpl|Proyecto|Municipio|Parroquia(s)|Estatus|F.Ini|F.Fin
+            //  Column widths  9 columns: Sectores|OrgLíder|OrgImpl|Proyecto|Municipio|Parroquia(s)|Estatus|F.Ini|F.Fin
             const pageWidth = doc.internal.pageSize.getWidth();
             const usableWidth = pageWidth - 12;
             const columnRatio = mode === 'full'
@@ -5146,7 +5746,7 @@ function getMapZoom() {
             // Initialize sector multi-select (all unchecked)
             initFormSectores();
 
-            // Setup event listener for state changes (includes municipio → parish update)
+            // Setup event listener for state changes (includes municipio   parish update)
             setupFormStateListener();
 
             document.getElementById('editProjectModal').classList.add('active');
@@ -5230,7 +5830,7 @@ function getMapZoom() {
             document.getElementById('formFechaFin').value = project['Fecha Prevista de Finalización'] || '';
             document.getElementById('formActividad').value = project['Actividad'] || '';
 
-            // Setup event listener for state changes (includes municipio → parish update)
+            // Setup event listener for state changes (includes municipio   parish update)
             setupFormStateListener();
 
             document.getElementById('editProjectModal').classList.add('active');
@@ -5298,7 +5898,7 @@ function getMapZoom() {
                 updateMapMarkers();
                 initializeCharts();
 
-                alert('✓ Proyecto eliminado exitosamente de Supabase');
+                alert('S Proyecto eliminado exitosamente de Supabase');
                 closeDeleteModal();
             } catch (e) {
                 console.error('Delete error:', e);
@@ -5363,7 +5963,7 @@ function getMapZoom() {
                 updateMapMarkers();
                 initializeCharts();
 
-                let message = `✓ Se eliminaron ${deleted} proyecto(s)`;
+                let message = `S Se eliminaron ${deleted} proyecto(s)`;
                 if (failed > 0) {
                     message += ` (${failed} fallaron)`;
                 }
@@ -5375,7 +5975,7 @@ function getMapZoom() {
             }
         }
 
-        // Function to handle form submission (async — saves to Supabase, one record per parish)
+        // Function to handle form submission (async  saves to Supabase, one record per parish)
         document.getElementById('projectForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -5397,7 +5997,7 @@ function getMapZoom() {
                 : (document.getElementById('formArea').value.trim() || '');
 
             const municipio = document.getElementById('formMunicipio').value.trim();
-            // Single parish value (radio button — one record per parish)
+            // Single parish value (radio button  one record per parish)
             const parroquiaVal = document.getElementById('formParroquias').value.trim();
 
             const recordsToSave = [{
@@ -5433,7 +6033,7 @@ function getMapZoom() {
                 const saved = await insertProjectsToSupabase(recordsToSave);
                 if (saved) {
                     const action = editingProjectIndex >= 0 ? 'actualizado' : 'guardado';
-                    alert(`✓ Proyecto ${action} exitosamente.`);
+                    alert(`S Proyecto ${action} exitosamente.`);
                     await reloadDataFromSupabase();
                 } else {
                     // Fallback: save only to local array
@@ -5508,11 +6108,11 @@ function getMapZoom() {
                     const inserted = await insertProjectsToSupabase(jsonData);
 
                     if (inserted) {
-                        alert(`✓ Datos cargados exitosamente en Supabase. Se importaron ${jsonData.length} proyectos desde JSON.`);
+                        alert(`S Datos cargados exitosamente en Supabase. Se importaron ${jsonData.length} proyectos desde JSON.`);
                         // Reload from Supabase to sync
                         await reloadDataFromSupabase();
                     } else {
-                        alert('⚠️ Error al guardar en Supabase. Intenta de nuevo.');
+                        alert('a️ Error al guardar en Supabase. Intenta de nuevo.');
                     }
 
                 } catch (error) {
@@ -5583,15 +6183,15 @@ function getMapZoom() {
                             ? ` (${originalCount} filas expandidas a ${expandedCount} registros por parroquia)`
                             : '';
                         if (importMode === 'replace') {
-                            alert(`✓ Datos importados. ${expandedCount} registros procesados${expandNote}.`);
+                            alert(`S Datos importados. ${expandedCount} registros procesados${expandNote}.`);
                         } else if (importMode === 'merge') {
-                            alert(`✓ Merge completado. ${expandedCount} registros procesados (insertados o actualizados)${expandNote}.`);
+                            alert(`S Merge completado. ${expandedCount} registros procesados (insertados o actualizados)${expandNote}.`);
                         }
 
                         // Reload from Supabase to sync
                         await reloadDataFromSupabase();
                     } else {
-                        alert('⚠️ Error al guardar en Supabase. Verifica el SQL del constraint único (ver CONTEXT.md).');
+                        alert('a️ Error al guardar en Supabase. Verifica el SQL del constraint único (ver CONTEXT.md).');
                     }
 
                 } catch (error) {
@@ -5640,6 +6240,12 @@ function getMapZoom() {
             }
         });
 
+        document.getElementById('projectFichaModeModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeProjectFichaModal();
+            }
+        });
+
         // Make functions globally accessible
         window.editProject = editProject;
         window.deleteProject = deleteProject;
@@ -5650,7 +6256,11 @@ function getMapZoom() {
         window.closeImportModal = closeImportModal;
         window.closeContactModal = closeContactModal;
         window.handleImport = handleImport;
+        window.openProjectFichaModal = openProjectFichaModal;
+        window.closeProjectFichaModal = closeProjectFichaModal;
+        window.exportProjectFichaFromModal = exportProjectFichaFromModal;
 
     </script>
 </body>
 </html>
+
