@@ -4916,8 +4916,22 @@ function getMapZoom() {
             return ordered.length > 0 ? ordered[0] : 'En proyecto';
         }
 
+        // jsPDF built-in fonts only support Latin-1 reliably.
+        // Convert unsupported unicode symbols to safe ASCII equivalents.
+        function toPdfSafeText(value) {
+            if (value === null || value === undefined) return '';
+            return value
+                .toString()
+                .replace(/\r\n/g, '\n')
+                .replace(/[\u2018\u2019]/g, "'")
+                .replace(/[\u201C\u201D]/g, '"')
+                .replace(/[\u2013\u2014]/g, '-')
+                .replace(/[\u2022\u25CF\u2B22]/g, '-')
+                .replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, '');
+        }
+
         function fitSingleLine(doc, text, maxWidth) {
-            const safe = (text || '').toString();
+            const safe = toPdfSafeText((text || '').toString());
             if (doc.getTextWidth(safe) <= maxWidth) return safe;
             let output = safe;
             while (output.length > 0 && doc.getTextWidth(`${output}...`) > maxWidth) {
@@ -4933,7 +4947,7 @@ function getMapZoom() {
             const maxLines = opts.maxLines || Math.max(1, Math.floor((height - (padding * 2)) / lineHeight));
             const fontStyle = opts.fontStyle || 'normal';
             const color = opts.textColor || [58, 58, 58];
-            const safeText = (text && String(text).trim()) ? String(text) : 'No especificado';
+            const safeText = (text && String(text).trim()) ? toPdfSafeText(String(text)) : 'No especificado';
 
             doc.setFont('helvetica', fontStyle);
             doc.setFontSize(fontSize);
@@ -4963,7 +4977,7 @@ function getMapZoom() {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(8);
             doc.setTextColor(0, 93, 146);
-            doc.text(title, x + 2.4, y + 4.5);
+            doc.text(toPdfSafeText(title), x + 2.4, y + 4.5);
 
             drawTextInBox(doc, value, x + 1.5, y + 5.3, width - 3, height - 7, {
                 fontSize: 7.9,
@@ -5477,6 +5491,9 @@ function getMapZoom() {
                 });
             }
 
+            tableHead = tableHead.map(row => row.map(cell => toPdfSafeText(cell)));
+            tableRows = tableRows.map(row => row.map(cell => toPdfSafeText(cell)));
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
@@ -5502,17 +5519,17 @@ function getMapZoom() {
 
             doc.setFontSize(15);
             doc.setTextColor(0, 93, 146);
-            doc.text(mainTitle, 15, 14);
+            doc.text(toPdfSafeText(mainTitle), 15, 14);
 
             // Mode label (right-aligned)
             doc.setFontSize(8);
             doc.setTextColor(mode === 'full' ? 0 : 80, mode === 'full' ? 120 : 80, mode === 'full' ? 0 : 80);
             const pageW = doc.internal.pageSize.getWidth();
-            doc.text(modeLabel, pageW - 6, 14, { align: 'right' });
+            doc.text(toPdfSafeText(modeLabel), pageW - 6, 14, { align: 'right' });
 
             doc.setFontSize(10);
             doc.setTextColor(90, 90, 90);
-            doc.text('Sub Oficina OCHA Maracaibo', 15, 21);
+            doc.text(toPdfSafeText('Sub Oficina OCHA Maracaibo'), 15, 21);
 
             // Filters summary
             const activeFilters = [];
@@ -5535,7 +5552,7 @@ function getMapZoom() {
                 doc.setFontSize(8);
                 doc.setTextColor(100, 100, 100);
                 let yPos = 27;
-                activeFilters.forEach(f => { doc.text(`⬢ ${f}`, 15, yPos); yPos += 4; });
+                activeFilters.forEach(f => { doc.text(`- ${toPdfSafeText(f)}`, 15, yPos); yPos += 4; });
                 headerEndY = yPos;
                 doc.setTextColor(0, 0, 0);
             }
