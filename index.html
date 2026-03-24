@@ -3522,27 +3522,25 @@ function getMapZoom() {
             const sliderMinDate = document.getElementById('sliderMinDate');
             const sliderMaxDate = document.getElementById('sliderMaxDate');
 
+            function fmtLocalDate(d) {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            }
+
             dateRangeSlider.addEventListener('input', function() {
                 const days = parseInt(this.value);
-                const endDate = new Date();
+                const today = new Date();
                 const startDate = new Date();
-                startDate.setDate(endDate.getDate() - days);
+                startDate.setDate(today.getDate() - days);
 
-                dateStart.value = startDate.toISOString().split('T')[0];
-                dateEnd.value = endDate.toISOString().split('T')[0];
+                dateStart.value = fmtLocalDate(startDate);
+                dateEnd.value = fmtLocalDate(today);
 
-                // Update slider labels
-                if (days <= 7) {
-                    sliderMinDate.textContent = 'Última semana';
-                } else if (days <= 30) {
-                    sliderMinDate.textContent = 'Último mes';
-                } else if (days <= 90) {
-                    sliderMinDate.textContent = 'Últimos 3 meses';
-                } else if (days <= 180) {
-                    sliderMinDate.textContent = 'Últimos 6 meses';
-                } else {
-                    sliderMinDate.textContent = 'Último año';
-                }
+                const fmtES = d => d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+                sliderMinDate.textContent = fmtES(startDate);
+                sliderMaxDate.textContent = fmtES(today);
 
                 applyFilters();
             });
@@ -3562,6 +3560,9 @@ function getMapZoom() {
                 searchInput.value = '';
                 dateStart.value = '';
                 dateEnd.value = '';
+                dateRangeSlider.value = 0;
+                sliderMinDate.textContent = 'Última semana';
+                sliderMaxDate.textContent = 'Último año';
                 currentFilters = {
                     org: '', municipio: [], estatus: '', search: '',
                     sector: '', dateStart: '', dateEnd: '', parroquia: []
@@ -3717,13 +3718,44 @@ function getMapZoom() {
 
                 // Date filters
                 if (currentFilters.dateStart || currentFilters.dateEnd) {
-                    const projectStart = new Date(project['Fecha de Inicio']);
-                    const projectEnd = new Date(project['Fecha Prevista de Finalización']);
-                    const filterStart = currentFilters.dateStart ? new Date(currentFilters.dateStart) : null;
-                    const filterEnd = currentFilters.dateEnd ? new Date(currentFilters.dateEnd) : null;
+                    const parseDate = v => {
+                        if (v === null || v === undefined || v === '') return null;
+                        // JS Date object
+                        if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+                        // Excel serial number (integer 10000–100000 covers ~1927–2173)
+                        if (typeof v === 'number') {
+                            if (v < 1000 || v > 200000) return null;
+                            const d = new Date(new Date(1899, 11, 30).getTime() + v * 86400000);
+                            return isNaN(d.getTime()) ? null : d;
+                        }
+                        const s = String(v).trim();
+                        if (!s) return null;
+                        // Numeric string serial
+                        if (/^\d{4,6}$/.test(s)) {
+                            const n = parseInt(s, 10);
+                            if (n > 1000 && n < 200000) {
+                                const d = new Date(new Date(1899, 11, 30).getTime() + n * 86400000);
+                                return isNaN(d.getTime()) ? null : d;
+                            }
+                        }
+                        // Spanish format DD/MM/YYYY
+                        const ddmm = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                        if (ddmm) return new Date(parseInt(ddmm[3]), parseInt(ddmm[2]) - 1, parseInt(ddmm[1]));
+                        // ISO datetime (has T)
+                        if (s.includes('T')) { const d = new Date(s); return isNaN(d.getTime()) ? null : d; }
+                        // ISO date YYYY-MM-DD → local midnight
+                        const d = new Date(s + 'T00:00:00');
+                        return isNaN(d.getTime()) ? null : d;
+                    };
+                    const projectStart = parseDate(project['Fecha de Inicio']);
+                    const projectEnd = parseDate(project['Fecha Prevista de Finalización']);
+                    const filterStart = currentFilters.dateStart ? new Date(currentFilters.dateStart + 'T00:00:00') : null;
+                    const filterEnd = currentFilters.dateEnd ? new Date(currentFilters.dateEnd + 'T23:59:59') : null;
 
-                    if (filterStart && projectEnd < filterStart) return false;
-                    if (filterEnd && projectStart > filterEnd) return false;
+                    // Overlap logic: exclude if project interval is entirely outside filter range
+                    // Projects with both dates missing pass (insufficient data to exclude)
+                    if (projectEnd && filterStart && projectEnd < filterStart) return false;
+                    if (projectStart && filterEnd && projectStart > filterEnd) return false;
                 }
 
                 return true;
@@ -6168,9 +6200,25 @@ function getMapZoom() {
             reader.onload = async function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    // Normalize date fields to ISO YYYY-MM-DD strings
+                    const _dateFields = ['Fecha de Inicio', 'Fecha Prevista de Finalización'];
+                    const _toIso = v => {
+                        if (!v && v !== 0) return '';
+                        if (v instanceof Date) {
+                            const y = v.getFullYear(), m = String(v.getMonth()+1).padStart(2,'0'), d = String(v.getDate()).padStart(2,'0');
+                            return `${y}-${m}-${d}`;
+                        }
+                        if (typeof v === 'number' && v > 1000) {
+                            const dt = new Date(new Date(1899, 11, 30).getTime() + v * 86400000);
+                            const y = dt.getFullYear(), m = String(dt.getMonth()+1).padStart(2,'0'), d = String(dt.getDate()).padStart(2,'0');
+                            return `${y}-${m}-${d}`;
+                        }
+                        return String(v);
+                    };
+                    jsonData.forEach(row => _dateFields.forEach(f => { if (f in row) row[f] = _toIso(row[f]); }));
 
                     if (jsonData.length === 0) {
                         alert('El archivo Excel está vacío o no tiene el formato correcto');
