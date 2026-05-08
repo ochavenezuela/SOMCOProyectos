@@ -2725,6 +2725,56 @@ function getMapZoom() {
             }
         }
 
+        // Function to find and remove San Gabriel, Zulia records from Falcón (data correction)
+        async function removeSanGabrielFromFalcon() {
+            try {
+                console.log('S Searching for San Gabriel records in Falcón to delete...');
+
+                // Query records to delete: Estado='Falcón', Municipio='Miranda', Parroquia='San Gabriel', Org contains 'Grupo Social CESAP'
+                const { data: recordsToDelete, error: queryError } = await supabaseClient
+                    .from('proyectos')
+                    .select('id, "Código del proyecto", "Municipio", "Parroquias", "Organización Líder"')
+                    .eq('Estado', 'Falcón')
+                    .eq('Municipio', 'Miranda')
+                    .eq('Parroquias', 'San Gabriel')
+                    .ilike('Organización Líder', '%Grupo Social CESAP%');
+
+                if (queryError) {
+                    console.error('S Error querying records:', queryError);
+                    return { success: false, deleted: 0 };
+                }
+
+                if (!recordsToDelete || recordsToDelete.length === 0) {
+                    console.log('S No San Gabriel records found in Falcón to delete');
+                    return { success: true, deleted: 0 };
+                }
+
+                console.log(`S Found ${recordsToDelete.length} San Gabriel records to delete:`, recordsToDelete);
+
+                // Delete the records
+                const ids = recordsToDelete.map(r => r.id);
+                const { error: deleteError } = await supabaseClient
+                    .from('proyectos')
+                    .delete()
+                    .in('id', ids);
+
+                if (deleteError) {
+                    console.error('S Error deleting records:', deleteError);
+                    return { success: false, deleted: 0 };
+                }
+
+                console.log(`S Successfully deleted ${ids.length} San Gabriel records from Falcón`);
+
+                // Also remove from in-memory data
+                sampleProjectsData = sampleProjectsData.filter(p => !ids.includes(p.id));
+
+                return { success: true, deleted: ids.length };
+            } catch (e) {
+                console.error('S Error in removeSanGabrielFromFalcon:', e);
+                return { success: false, deleted: 0 };
+            }
+        }
+
         // Initialize the dashboard
         document.addEventListener('DOMContentLoaded', async () => {
             // Try to load data from Supabase first, then fall back to JSON
@@ -2739,12 +2789,26 @@ function getMapZoom() {
                 // Add fallback data here if needed
             }
 
+            // Clean up San Gabriel records from Falcón (data correction)
+            console.log('S Running data cleanup: removing San Gabriel, Zulia from Falcón...');
+            const cleanupResult = await removeSanGabrielFromFalcon();
+            if (cleanupResult.deleted > 0) {
+                console.log(`S Data cleanup complete: removed ${cleanupResult.deleted} records`);
+            }
+
             projectsData = sampleProjectsData;
 
             // Expand data for proper filtering
             expandedData = expandProjectData(projectsData);
             console.log('S Loaded', projectsData.length, 'original projects');
             console.log('S Expanded to', expandedData.length, 'filterable rows');
+
+            // Verify Estado field exists in expanded data
+            if (expandedData.length > 0) {
+                const statesInData = [...new Set(expandedData.map(p => p['Estado']).filter(s => s))];
+                console.log('S Estados found in loaded data:', statesInData.sort().join(', '));
+                console.log('S First 3 projects Estado values:', expandedData.slice(0, 3).map(p => ({ municipio: p['Municipio'], estado: p['Estado'] })));
+            }
 
             // Setup state selector listeners
             setupStateListeners();
@@ -2768,8 +2832,12 @@ function getMapZoom() {
 
         // Function to setup state radio button listeners
         function setupStateListeners() {
-            document.querySelectorAll('input[name="state"]').forEach(radio => {
+            const stateRadios = document.querySelectorAll('input[name="state"]');
+            console.log(`S Found ${stateRadios.length} state radio buttons`);
+
+            stateRadios.forEach(radio => {
                 radio.addEventListener('change', (e) => {
+                    console.log('S State radio button clicked:', e.target.value);
                     currentState = e.target.value;
 
                     // Update title
@@ -2790,13 +2858,17 @@ function getMapZoom() {
                         map.setView(getMapCenter(), getMapZoom());
                     }
 
-                    // Update municipality list
+                    // Update municipality list (includes reset to handle shared names like Miranda)
+                    // Note: Miranda exists in both Zulia and Falcón, so resetting ensures correct filtering
+                    console.log('S Updating municipality list for state:', currentState);
                     updateMunicipalityList();
 
                     // Filter data by state and apply other filters
+                    // The applyFilters() function now includes enhanced year filtering
+                    console.log('S Calling filterDataByState for state:', currentState);
                     filterDataByState();
 
-                    console.log('S State changed to:', currentState);
+                    console.log('S State changed to:', currentState, '| DataToFilter has', filteredData.length, 'projects');
                 });
             });
         }
@@ -3097,10 +3169,46 @@ function getMapZoom() {
             URL.revokeObjectURL(url);
         }
 
+        // Helper function to identify ambiguous municipalities (those appearing in multiple states)
+        function getAmbiguousMunicipalities() {
+            const allStates = ['Zulia', 'Falcón', 'Lara', 'Trujillo'];
+            const municipalityMap = {};
+
+            allStates.forEach(state => {
+                const munis = getOfficialMunicipalities(state);
+                munis.forEach(muni => {
+                    if (!municipalityMap[muni]) {
+                        municipalityMap[muni] = [];
+                    }
+                    municipalityMap[muni].push(state);
+                });
+            });
+
+            // Return only municipalities that appear in more than one state
+            const ambiguous = {};
+            Object.entries(municipalityMap).forEach(([muni, states]) => {
+                if (states.length > 1) {
+                    ambiguous[muni] = states;
+                }
+            });
+
+            return ambiguous;
+        }
+
+        // Get display label for a municipality, including state qualifier if ambiguous
+        function getMunicipalityDisplayLabel(municipio, state) {
+            const ambiguous = getAmbiguousMunicipalities();
+            if (ambiguous[municipio]) {
+                return `${municipio}, ${state}`;
+            }
+            return municipio;
+        }
+
         // Function to update municipality list based on state
         function updateMunicipalityList() {
             const municipiosContainer = document.getElementById('municipioDropdown');
             const municipalities = getOfficialMunicipalities();
+            const ambiguous = getAmbiguousMunicipalities();
 
             municipiosContainer.innerHTML = `
                 <div class="multi-select-option">
@@ -3112,19 +3220,25 @@ function getMapZoom() {
             municipalities.forEach(municipio => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'multi-select-option';
+                const displayLabel = ambiguous[municipio] ? `${municipio}, ${currentState}` : municipio;
                 optionDiv.innerHTML = `
-                    <input type="checkbox" class="municipio-checkbox" value="${municipio}" checked>
-                    <label style="cursor: pointer;">${municipio}</label>
+                    <input type="checkbox" class="municipio-checkbox" value="${municipio}">
+                    <label style="cursor: pointer;">${displayLabel}</label>
                 `;
                 municipiosContainer.appendChild(optionDiv);
             });
 
-            console.log('S Municipality list updated with', municipalities.length, 'municipalities');
+            console.log('S Municipality list updated for state', currentState, 'with', municipalities.length, 'municipalities');
 
             // Reset parish filter when municipality list changes (state change)
             const parSection = document.getElementById('parroquiaFilterSection');
             if (parSection) parSection.classList.remove('visible');
             currentFilters.parroquia = [];
+
+            // IMPORTANT: When switching states, reset municipality filter to avoid Miranda (Zulia) mixing with Miranda (Falcón)
+            // Note: State-based filtering in applyFilters() provides the actual protection,
+            // but resetting the UI selection prevents user confusion
+            currentFilters.municipio = [];
 
             // Reinitialize event listeners after DOM is updated
             setTimeout(() => {
@@ -3137,28 +3251,45 @@ function getMapZoom() {
             const display = document.getElementById('municipioDisplay');
             const allCheckbox = dropdown.querySelector('#all-municipios');
 
-            if (!display || !dropdown || !allCheckbox) return;
+            if (!display || !dropdown || !allCheckbox) {
+                console.warn('S setupMunicipalityEventListeners: Missing required elements', { dropdown: !!dropdown, display: !!display, allCheckbox: !!allCheckbox });
+                return;
+            }
+
+            // Remove all old listeners by cloning the elements
+            // This prevents multiple event listeners from accumulating
+            const newDisplay = display.cloneNode(true);
+            display.parentNode.replaceChild(newDisplay, display);
+            const newDropdown = dropdown.cloneNode(true);
+            dropdown.parentNode.replaceChild(newDropdown, dropdown);
+
+            // Get fresh references after cloning
+            const freshDisplay = document.getElementById('municipioDisplay');
+            const freshDropdown = document.getElementById('municipioDropdown');
+            const freshAllCheckbox = freshDropdown.querySelector('#all-municipios');
 
             // Toggle dropdown visibility
-            display.addEventListener('click', (e) => {
+            freshDisplay.addEventListener('click', (e) => {
                 e.stopPropagation();
-                dropdown.classList.toggle('open');
-                display.classList.toggle('open');
+                freshDropdown.classList.toggle('open');
+                freshDisplay.classList.toggle('open');
+                console.log('S Municipality dropdown toggled');
             });
 
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.multi-select-container')) {
-                    dropdown.classList.remove('open');
-                    display.classList.remove('open');
+                    freshDropdown.classList.remove('open');
+                    freshDisplay.classList.remove('open');
                 }
             });
 
-            // Handle "Todos" checkbox - event delegation
-            allCheckbox.addEventListener('change', () => {
-                const allCheckboxes = dropdown.querySelectorAll('input[type="checkbox"]:not(#all-municipios)');
+            // Handle "Todos" checkbox
+            freshAllCheckbox.addEventListener('change', (e) => {
+                console.log('S "Todos" checkbox changed to:', freshAllCheckbox.checked);
+                const allCheckboxes = freshDropdown.querySelectorAll('input[type="checkbox"]:not(#all-municipios)');
                 allCheckboxes.forEach(cb => {
-                    cb.checked = allCheckbox.checked;
+                    cb.checked = freshAllCheckbox.checked;
                 });
                 updateMunicipioDisplay();
                 applyFilters();
@@ -3166,24 +3297,26 @@ function getMapZoom() {
                 updateParroquiaFilter();
             });
 
-            // Handle individual municipality checkboxes - event delegation via dropdown container
-            dropdown.addEventListener('change', (e) => {
+            // Handle individual municipality checkboxes
+            freshDropdown.addEventListener('change', (e) => {
                 if (e.target.classList.contains('municipio-checkbox')) {
-                    const allCheckboxes = dropdown.querySelectorAll('input[type="checkbox"]:not(#all-municipios)');
-                    const checkedBoxes = dropdown.querySelectorAll('input[type="checkbox"]:not(#all-municipios):checked');
+                    console.log('S Municipality checkbox changed:', e.target.value, 'checked:', e.target.checked);
+                    const allCheckboxes = freshDropdown.querySelectorAll('input[type="checkbox"]:not(#all-municipios)');
+                    const checkedBoxes = freshDropdown.querySelectorAll('input[type="checkbox"]:not(#all-municipios):checked');
 
                     // Update "Todos" state based on selections
                     if (checkedBoxes.length === 0) {
-                        allCheckbox.checked = false;
-                        allCheckbox.indeterminate = false;
+                        freshAllCheckbox.checked = false;
+                        freshAllCheckbox.indeterminate = false;
                     } else if (checkedBoxes.length === allCheckboxes.length) {
-                        allCheckbox.checked = true;
-                        allCheckbox.indeterminate = false;
+                        freshAllCheckbox.checked = true;
+                        freshAllCheckbox.indeterminate = false;
                     } else {
-                        allCheckbox.checked = false;
-                        allCheckbox.indeterminate = true;
+                        freshAllCheckbox.checked = false;
+                        freshAllCheckbox.indeterminate = true;
                     }
 
+                    console.log('S "Todos" checkbox state updated:', { checked: freshAllCheckbox.checked, indeterminate: freshAllCheckbox.indeterminate });
                     updateMunicipioDisplay();
                     applyFilters();
                     zoomToSelectedMunicipalities();
@@ -3679,8 +3812,15 @@ function getMapZoom() {
             let dataToFilter = expandedData;
 
             // First filter by state if not "Todos" (Todos means all states)
+            // This ensures Miranda (Zulia) and Miranda (Falcón) are properly separated
             if (currentState !== 'Todos') {
-                dataToFilter = expandedData.filter(p => p['Estado'] === currentState);
+                dataToFilter = expandedData.filter(p => {
+                    const projectState = (p['Estado'] || '').trim();
+                    return projectState === currentState;
+                });
+                console.log(`S Filtering by state '${currentState}': ${dataToFilter.length} projects found`);
+            } else {
+                console.log('S No state filter applied (Todos selected)');
             }
 
             // Then apply other filters
@@ -3694,10 +3834,13 @@ function getMapZoom() {
                 }
 
                 // Municipality filter - exact match only to distinguish "Mara" from "Maracaibo"
+                // State filter already applied above, so Miranda (Zulia) won't mix with Miranda (Falcón)
                 if (currentFilters.municipio && currentFilters.municipio.length > 0) {
                     const projectMunicipality = project['Municipio'];
+                    const projectState = project['Estado']; // Additional validation for clarity
 
                     // Check if project municipality matches any selected municipality
+                    // Combined with state filter to handle municipalities that exist in multiple states
                     const hasMatch = currentFilters.municipio.some(filterMunicipio => {
                         // Exact match first
                         if (projectMunicipality === filterMunicipio) {
@@ -3731,18 +3874,39 @@ function getMapZoom() {
                     return false;
                 }
 
-                // Year/temporality filter
-                // 2026 codes: PROY-ZUL-2026-xxx (year embedded)
+                // Year/temporality filter - IMPROVED
+                // 2026 codes: PROY-ZUL-2026-xxx (year embedded in code)
                 // 2025 codes: PRJxxx / PFALxxx (no year embedded — legacy format)
+                // FALLBACK: check Fecha de Inicio if code doesn't have year
                 if (currentFilters.año) {
                     const code = project['Código del proyecto'] || '';
-                    const codeYear = code.match(/\b(20\d{2})\b/);
+                    const codeYearMatch = code.match(/\b(20\d{2})\b/);
+                    const codeYear = codeYearMatch ? codeYearMatch[1] : null;
+
+                    // Get year from start date as fallback
+                    let startDateYear = null;
+                    const startDate = project['Fecha de Inicio'];
+                    if (startDate) {
+                        try {
+                            const dateObj = new Date(startDate);
+                            if (!isNaN(dateObj.getTime())) {
+                                startDateYear = dateObj.getFullYear().toString();
+                            }
+                        } catch (e) {
+                            // Date parsing failed, ignore
+                        }
+                    }
+
+                    // Determine project year: code year > start date year
+                    const projectYear = codeYear || startDateYear;
+
                     if (currentFilters.año === '2025') {
                         // 2025 = records whose code does NOT contain any 4-digit year
-                        if (codeYear) return false;
+                        // and whose start date is 2025 or no year info available
+                        if (projectYear && projectYear !== '2025') return false;
                     } else {
-                        // 2026+ = records whose code contains that specific year
-                        if (!codeYear || codeYear[1] !== currentFilters.año) return false;
+                        // 2026+ = records whose code or start date contains that specific year
+                        if (!projectYear || projectYear !== currentFilters.año) return false;
                     }
                 }
 
@@ -4536,6 +4700,14 @@ function getMapZoom() {
             // Clear existing markers
             markers.forEach(marker => map.removeLayer(marker));
             markers = [];
+
+            console.log(`S updateMapMarkers: filteredData has ${filteredData.length} projects`);
+            if (filteredData.length > 0) {
+                const states = [...new Set(filteredData.map(p => p['Estado']))];
+                console.log(`S States in filteredData: ${states.join(', ')}`);
+                const municipios = [...new Set(filteredData.map(p => p['Municipio']))];
+                console.log(`S Municipios in filteredData: ${municipios.join(', ')}`);
+            }
 
             const activeCoords = getActiveCoordinates();
 
