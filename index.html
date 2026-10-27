@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proyectos Humanitarios Zulia y Falcón - OCHA</title>
-    <link rel="icon" type="image/png" href="https://images4.imagebam.com/f2/74/67/MEZQJH3_o.PNG">
+    <link rel="icon" type="image/png" href="https://res.cloudinary.com/f6fizdos/image/upload/f_auto/q_auto/logo_ocha_lavnot.png">
     
     <!-- External Libraries -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1269,7 +1269,7 @@
     <header class="header">
         <div class="header-content">
             <div class="header-brand">
-                <img src="https://images4.imagebam.com/f2/74/67/MEZQJH3_o.PNG" alt="OCHA Logo" class="header-logo">
+                <img src="https://res.cloudinary.com/f6fizdos/image/upload/f_auto/q_auto/logo_ocha_lavnot.png" alt="OCHA Logo" class="header-logo">
                 <div class="header-title">
                     <h1>Registro de Proyectos Humanitarios <span id="stateTitle">Zulia y Falcón</span></h1>
                     <div class="header-subtitle">
@@ -3888,18 +3888,14 @@ function getMapZoom() {
                     const codeYearMatch = code.match(/\b(20\d{2})\b/);
                     const codeYear = codeYearMatch ? codeYearMatch[1] : null;
 
-                    // Get year from start date as fallback
+                    // Get year from start date as fallback.
+                    // Use string extraction to avoid UTC→local timezone rollback
+                    // (new Date('2026-01-01') devuelve 2025 en UTC-4 / Venezuela)
                     let startDateYear = null;
                     const startDate = project['Fecha de Inicio'];
                     if (startDate) {
-                        try {
-                            const dateObj = new Date(startDate);
-                            if (!isNaN(dateObj.getTime())) {
-                                startDateYear = dateObj.getFullYear().toString();
-                            }
-                        } catch (e) {
-                            // Date parsing failed, ignore
-                        }
+                        const yearStr = String(startDate).substring(0, 4);
+                        if (/^\d{4}$/.test(yearStr)) startDateYear = yearStr;
                     }
 
                     // Determine project year: code year > start date year
@@ -4324,7 +4320,8 @@ function getMapZoom() {
             // Define headers
             const headers = [
                 { key: 'select', text: '', type: 'checkbox' },
-                { key: 'org', text: 'Organización Líder', type: 'text' }, 
+                { key: 'org', text: 'Organización Líder', type: 'text' },
+                { key: 'implementer', text: 'Organización Implementadora', type: 'text' },
                 { key: 'project', text: 'Nombre del proyecto', type: 'text' }, 
                 { key: 'municipality', text: 'Municipio', type: 'text' },
                 { key: 'parroquia', text: 'Parroquia', type: 'text' },
@@ -4397,7 +4394,12 @@ function getMapZoom() {
                 // Organization
                 const orgCell = row.insertCell();
                 orgCell.textContent = project['Organización Líder'] || 'N/A';
-                
+
+                // Implementing organization
+                const implCell = row.insertCell();
+                implCell.textContent = project['Organización implementadora'] || 'N/A';
+                implCell.title = project['Organización implementadora'] || 'N/A';
+
                 // Project name
                 const nameCell = row.insertCell();
                 nameCell.textContent = project['Nombre del proyecto'] || 'N/A';
@@ -4553,6 +4555,10 @@ function getMapZoom() {
                     case 'org':
                         aValue = (a['Organización Líder'] || '').toLowerCase();
                         bValue = (b['Organización Líder'] || '').toLowerCase();
+                        break;
+                    case 'implementer':
+                        aValue = (a['Organización implementadora'] || '').toLowerCase();
+                        bValue = (b['Organización implementadora'] || '').toLowerCase();
                         break;
                     case 'project':
                         aValue = (a['Nombre del proyecto'] || '').toLowerCase();
@@ -4836,6 +4842,7 @@ function getMapZoom() {
                                     <strong>${p['Nombre del proyecto'] || 'Sin nombre'}</strong>
                                 </div>
                                 <div style="color:#666;">${p['Organización Líder'] || 'N/A'}</div>
+                                ${p['Organización implementadora'] ? `<div style="color:#888;font-size:0.78rem;">Implementa: ${p['Organización implementadora']}</div>` : ''}
                                 <button class="btn btn-primary btn-sm" style="margin-top: 0.3rem; font-size: 0.7rem; padding: 0.2rem 0.4rem;" onclick="showProjectDetails(${p._idx})">Ver Detalles</button>
                             </div>
                         `).join('')}
